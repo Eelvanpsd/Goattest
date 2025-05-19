@@ -27,7 +27,7 @@ const AVALANCHE_NETWORK = {
   blockExplorerUrls: ['https://snowtrace.io/']
 };
 
-// UPDATED CONTRACT ABI - Your deployed contract
+// Contract ABI
 const CONTRACT_ABI = [
   "function createGame(uint256 _bet, bytes32 _commitHash) external",
   "function joinGame(uint256 _id, uint8 _choice) external",
@@ -72,7 +72,7 @@ const ERC20_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)"
 ];
 
-// UPDATED GAME STATES - New contract states
+// Game states
 const GAME_STATES = {
   0: 'Waiting',
   1: 'Joined', 
@@ -112,18 +112,48 @@ const RockPaperScissors = ({ onClose }) => {
   const [betAmount, setBetAmount] = useState('');
   const [tokenBalance, setTokenBalance] = useState('0');
   const [tokenAllowance, setTokenAllowance] = useState('0');
-  const [gameResultPopup, setGameResultPopup] = useState(null); // For showing game results
+  const [gameResultPopup, setGameResultPopup] = useState(null);
   
   // Game specific state
   const [pendingReveals, setPendingReveals] = useState(new Map());
+  
+  // Bot connection state
+  const [botConnected, setBotConnected] = useState(false);
   
   // Refs for cleanup
   const eventListenersRef = useRef(new Map());
   const intervalsRef = useRef(new Map());
 
+  // Bot connection test function
+  const testBotConnection = async () => {
+    try {
+      const response = await fetch(`${BOT_SERVICE_URL}/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBotConnected(true);
+        setError('');
+        return true;
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      setBotConnected(false);
+      return false;
+    }
+  };
+
   // Check if already connected on component mount
   useEffect(() => {
     const checkConnection = async () => {
+      await testBotConnection();
+      
       if (window.ethereum) {
         try {
           const accounts = await window.ethereum.request({ 
@@ -133,22 +163,18 @@ const RockPaperScissors = ({ onClose }) => {
           if (accounts.length > 0) {
             await connectWallet();
           } else {
-            // Even if not connected, load all active games to display
             await loadPublicData();
             
-            // Set up periodic refresh for public data (every 20 seconds)
             const publicRefreshInterval = setInterval(async () => {
               try {
-                // Only refresh if still no account connected
                 if (!account) {
                   await loadPublicData();
                 }
               } catch (error) {
                 console.error('Public periodic refresh failed:', error);
               }
-            }, 20000); // 20 seconds
+            }, 20000);
             
-            // Store interval for cleanup
             intervalsRef.current.set('public_refresh', publicRefreshInterval);
           }
         } catch (error) {
@@ -159,7 +185,6 @@ const RockPaperScissors = ({ onClose }) => {
     
     checkConnection();
     
-    // Cleanup on unmount
     return () => {
       cleanup();
     };
@@ -172,16 +197,27 @@ const RockPaperScissors = ({ onClose }) => {
     }
   }, [account]);
 
+  // Bot connection monitoring
+  useEffect(() => {
+    testBotConnection();
+    
+    const botTestInterval = setInterval(testBotConnection, 60000);
+    intervalsRef.current.set('bot_test', botTestInterval);
+    
+    return () => {
+      clearInterval(botTestInterval);
+      intervalsRef.current.delete('bot_test');
+    };
+  }, []);
+
   // Load public data (all active games) even without wallet connection
   const loadPublicData = async () => {
     try {
       setLoading(true);
       
-      // Create a read-only provider for public data
       const publicProvider = new ethers.providers.JsonRpcProvider(AVALANCHE_NETWORK.rpcUrls[0]);
       const publicContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, publicProvider);
       
-      // Load all active games - Updated for new contract format
       const activeIds = await publicContract.getActive();
       const activeGamesData = await Promise.all(
         activeIds.map(async (id) => {
@@ -200,7 +236,6 @@ const RockPaperScissors = ({ onClose }) => {
 
   // Cleanup function
   const cleanup = () => {
-    // Clear all event listeners
     eventListenersRef.current.forEach((listener, event) => {
       if (contract) {
         contract.off(event, listener);
@@ -208,7 +243,6 @@ const RockPaperScissors = ({ onClose }) => {
     });
     eventListenersRef.current.clear();
     
-    // Clear all intervals (including periodic refresh intervals)
     intervalsRef.current.forEach((interval, key) => {
       clearTimeout(interval);
       clearInterval(interval);
@@ -241,7 +275,6 @@ const RockPaperScissors = ({ onClose }) => {
       });
       setNetworkCorrect(true);
     } catch (switchError) {
-      // If the network is not added, add it
       if (switchError.code === 4902) {
         try {
           await window.ethereum.request({
@@ -271,7 +304,6 @@ const RockPaperScissors = ({ onClose }) => {
       setIsConnecting(true);
       setError('');
       
-      // Request account access
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts'
       });
@@ -280,7 +312,6 @@ const RockPaperScissors = ({ onClose }) => {
       const signer = provider.getSigner();
       const account = accounts[0];
       
-      // Initialize contracts
       const gameContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
       const tokenContract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
       
@@ -290,10 +321,8 @@ const RockPaperScissors = ({ onClose }) => {
       setContract(gameContract);
       setTokenContract(tokenContract);
       
-      // Check network
       await checkNetwork();
       
-      // Load initial data if network is correct
       if (networkCorrect) {
         await loadGameData(gameContract, tokenContract, account);
         setupEventListeners(gameContract);
@@ -313,19 +342,16 @@ const RockPaperScissors = ({ onClose }) => {
       loadGameData(contract, tokenContract, account);
       setupEventListeners(contract);
       
-      // Set up periodic refresh every 30 seconds
       const refreshInterval = setInterval(async () => {
         try {
           await loadGameData(contract, tokenContract, account);
         } catch (error) {
           console.error('Periodic refresh failed:', error);
         }
-      }, 30000); // 30 seconds
+      }, 30000);
       
-      // Store interval for cleanup
       intervalsRef.current.set('periodic_refresh', refreshInterval);
       
-      // Cleanup on unmount
       return () => {
         clearInterval(refreshInterval);
         intervalsRef.current.delete('periodic_refresh');
@@ -333,7 +359,7 @@ const RockPaperScissors = ({ onClose }) => {
     }
   }, [contract, tokenContract, account, networkCorrect]);
 
-  // UPDATED: Event listener setup - Bot handles auto-reveal automatically
+  // Event listener setup
   const setupEventListeners = (gameContract) => {
     const events = [
       'GameCreated',
@@ -344,7 +370,6 @@ const RockPaperScissors = ({ onClose }) => {
       'ChoiceRevealed'
     ];
     
-    // Helper function for auto refresh
     const autoRefresh = async (delay = 2000) => {
       setTimeout(async () => {
         try {
@@ -367,18 +392,7 @@ const RockPaperScissors = ({ onClose }) => {
           autoRefresh(1000);
         }
         
-        // UPDATED: PlayerJoined - Bot service handles auto-reveal, no manual intervention
         if (eventName === 'PlayerJoined') {
-          const [gameId] = args;
-          
-          console.log(`🎮 Game ${gameId} joined - bot service will auto-reveal in ~5 seconds`);
-          console.log('🤖 No manual intervention required for Player 1!');
-          
-          // Optional: Show feedback to users
-          setTimeout(() => {
-            console.log(`🚀 Game ${gameId} should be auto-resolved by bot service`);
-          }, 6000);
-          
           autoRefresh(1500);
         }
         
@@ -412,8 +426,7 @@ const RockPaperScissors = ({ onClose }) => {
                   playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
                   opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
                   betAmount: gameDetails.bet,
-                  autoResolved: true,
-                  resolvedByBot: true // Bot resolved
+                  autoResolved: true
                 });
               }
             } catch (error) {
@@ -444,8 +457,7 @@ const RockPaperScissors = ({ onClose }) => {
                   refundAmount: refundAmount,
                   playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
                   opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
-                  betAmount: gameDetails.bet,
-                  resolvedByBot: true
+                  betAmount: gameDetails.bet
                 });
               }
             } catch (error) {
@@ -462,12 +474,11 @@ const RockPaperScissors = ({ onClose }) => {
     });
   };
 
-  // Load game data - Updated for new contract
+  // Load game data
   const loadGameData = async (gameContract, tokenContract, userAccount) => {
     try {
       setLoading(true);
       
-      // Load active games (all games, not just user's)
       const activeIds = await gameContract.getActive();
       const activeGamesData = await Promise.all(
         activeIds.map(async (id) => {
@@ -477,7 +488,6 @@ const RockPaperScissors = ({ onClose }) => {
       );
       setActiveGames(activeGamesData);
       
-      // Load finished games
       const finishedIds = await gameContract.getFinished(20);
       const finishedGamesData = await Promise.all(
         finishedIds.map(async (id) => {
@@ -487,11 +497,9 @@ const RockPaperScissors = ({ onClose }) => {
       );
       setFinishedGames(finishedGamesData);
       
-      // Load player stats
       const stats = await gameContract.getStats(userAccount);
       setPlayerStats(stats);
       
-      // Load token balance and allowance
       const balance = await tokenContract.balanceOf(userAccount);
       const allowance = await tokenContract.allowance(userAccount, CONTRACT_ADDRESS);
       setTokenBalance(ethers.utils.formatEther(balance));
@@ -509,7 +517,7 @@ const RockPaperScissors = ({ onClose }) => {
     return ethers.BigNumber.from(ethers.utils.randomBytes(32));
   };
 
-  // UPDATED: Create game with bot service integration
+  // Create game function
   const createGame = async () => {
     if (!selectedChoice && selectedChoice !== 0) {
       setError('Please select your move');
@@ -543,31 +551,24 @@ const RockPaperScissors = ({ onClose }) => {
       const betWei = ethers.utils.parseEther(betAmount);
       const nonce = generateNonce();
       
-      // Generate hash using the contract's hash function
       const hash = await contract.hash(selectedChoice, nonce, account);
       
-      // Check allowance
       const currentAllowance = ethers.BigNumber.from(ethers.utils.parseEther(tokenAllowance));
       if (currentAllowance.lt(betWei)) {
-        // Need to approve tokens
         const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betWei);
         await approveTx.wait();
         
-        // Update allowance state
         const newAllowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
         setTokenAllowance(ethers.utils.formatEther(newAllowance));
       }
       
-      // Create game with commitment hash only
       const tx = await contract.createGame(betWei, hash);
       const receipt = await tx.wait();
       
-      // Find the new game ID from events
       const gameCreatedEvent = receipt.events.find(e => e.event === 'GameCreated');
       if (gameCreatedEvent) {
         const gameId = gameCreatedEvent.args.id.toString();
         
-        // Prepare reveal data for bot service
         const revealData = {
           choice: selectedChoice,
           nonce: nonce.toString(),
@@ -575,7 +576,6 @@ const RockPaperScissors = ({ onClose }) => {
           hash: hash
         };
         
-        // Send reveal data to bot service
         try {
           const encryptedData = btoa(JSON.stringify(revealData));
           
@@ -587,35 +587,28 @@ const RockPaperScissors = ({ onClose }) => {
             body: JSON.stringify({
               gameId: gameId,
               encryptedRevealData: encryptedData
-            })
+            }),
+            signal: AbortSignal.timeout(10000)
           });
           
-          if (response.ok) {
-            console.log(`✅ Reveal data stored in bot service for game ${gameId}`);
-            console.log('🤖 Bot will automatically reveal when Player 2 joins!');
-          } else {
-            console.error('❌ Failed to store reveal data in bot service');
-            // Fallback: Store locally
-            localStorage.setItem(`reveal_${gameId}`, encryptedData);
-            console.log('💾 Stored reveal data locally as fallback');
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
           }
+          
+          setBotConnected(true);
         } catch (error) {
-          console.error('Error sending reveal data to bot service:', error);
-          // Fallback: Store locally
           const encryptedData = btoa(JSON.stringify(revealData));
           localStorage.setItem(`reveal_${gameId}`, encryptedData);
-          console.log('💾 Stored reveal data locally as fallback');
+          setBotConnected(false);
         }
         
         setPendingReveals(prev => new Map(prev.set(gameId, revealData)));
       }
       
-      // Reset form
       setSelectedChoice(null);
       setBetAmount('');
       setCurrentView('games');
       
-      // Refresh data
       await loadGameData(contract, tokenContract, account);
       
     } catch (error) {
@@ -626,7 +619,7 @@ const RockPaperScissors = ({ onClose }) => {
     }
   };
 
-  // Join existing game - Same as before
+  // Join existing game
   const joinGame = async (gameId, choice) => {
     if (!contract || !tokenContract) return;
     
@@ -634,25 +627,20 @@ const RockPaperScissors = ({ onClose }) => {
       setLoading(true);
       setError('');
       
-      // Get game info to check bet amount
       const [game] = await contract.getGame(gameId);
       const betAmount = game.bet;
       
-      // Check if user has enough balance
       const balance = await tokenContract.balanceOf(account);
       if (balance.lt(betAmount)) {
         setError(`Insufficient balance. You need ${formatTokenAmount(betAmount)} tokens to join this game.`);
         return;
       }
       
-      // Check allowance
       const allowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
       if (allowance.lt(betAmount)) {
-        // Need to approve tokens
         const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betAmount);
         await approveTx.wait();
         
-        // Update allowance state
         const newAllowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
         setTokenAllowance(ethers.utils.formatEther(newAllowance));
       }
@@ -660,9 +648,6 @@ const RockPaperScissors = ({ onClose }) => {
       const tx = await contract.joinGame(gameId, choice);
       await tx.wait();
       
-      console.log(`🎮 Joined game ${gameId}! Bot will auto-reveal Player 1's choice in ~5 seconds`);
-      
-      // Refresh data
       await loadGameData(contract, tokenContract, account);
       
     } catch (error) {
@@ -673,7 +658,7 @@ const RockPaperScissors = ({ onClose }) => {
     }
   };
 
-  // Cancel game - Same as before
+  // Cancel game
   const cancelGame = async (gameId) => {
     if (!contract) return;
     
@@ -684,7 +669,6 @@ const RockPaperScissors = ({ onClose }) => {
       const tx = await contract.cancel(gameId);
       await tx.wait();
       
-      // Remove reveal data
       localStorage.removeItem(`reveal_${gameId}`);
       setPendingReveals(prev => {
         const newMap = new Map(prev);
@@ -692,7 +676,6 @@ const RockPaperScissors = ({ onClose }) => {
         return newMap;
       });
       
-      // Refresh data
       await loadGameData(contract, tokenContract, account);
       
     } catch (error) {
@@ -714,11 +697,11 @@ const RockPaperScissors = ({ onClose }) => {
     return Math.floor(parseFloat(ethers.utils.formatEther(amount))).toString();
   };
 
-  // Game result popup component - Updated to show bot resolution
+  // Game result popup component
   const renderGameResultPopup = () => {
     if (!gameResultPopup) return null;
     
-    const { gameId, winner, winnings, isWinner, result, refundAmount, playerChoice, opponentChoice, betAmount, autoResolved, resolvedByBot } = gameResultPopup;
+    const { gameId, winner, winnings, isWinner, result, refundAmount, playerChoice, opponentChoice, betAmount, autoResolved } = gameResultPopup;
     
     return (
       <div className="game-result-popup-overlay">
@@ -730,7 +713,7 @@ const RockPaperScissors = ({ onClose }) => {
                   <img src={winPng} alt="Win" className="result-image" />
                 </div>
                 <h2>Congratulations!</h2>
-                <p>You won the game!{resolvedByBot && " 🤖 (Auto-resolved by bot)"}</p>
+                <p>You won the game!</p>
               </>
             )}
             {result === 'lost' && (
@@ -739,7 +722,7 @@ const RockPaperScissors = ({ onClose }) => {
                   <img src={losePng} alt="Lose" className="result-image" />
                 </div>
                 <h2>Game Over</h2>
-                <p>You lost this round{resolvedByBot && " 🤖 (Auto-resolved by bot)"}</p>
+                <p>You lost this round</p>
               </>
             )}
             {result === 'tie' && (
@@ -748,7 +731,7 @@ const RockPaperScissors = ({ onClose }) => {
                   <img src={tiePng} alt="Tie" className="result-image" />
                 </div>
                 <h2>It's a Tie!</h2>
-                <p>Both players chose the same - refund issued{resolvedByBot && " 🤖 (Auto-resolved by bot)"}</p>
+                <p>Both players chose the same - refund issued</p>
               </>
             )}
           </div>
@@ -757,7 +740,6 @@ const RockPaperScissors = ({ onClose }) => {
             <div className="game-info">
               <p><strong>Game #:</strong> {gameId}</p>
               
-              {/* Show choices if available */}
               {playerChoice !== undefined && opponentChoice !== undefined && (
                 <div className="choices-display">
                   <div className="choice-row">
@@ -775,19 +757,16 @@ const RockPaperScissors = ({ onClose }) => {
                 </div>
               )}
               
-              {/* Show bet amount */}
               {betAmount && (
                 <p><strong>Bet Amount:</strong> {formatTokenAmount(betAmount)} tokens</p>
               )}
               
-              {/* Show refund for ties */}
               {result === 'tie' && refundAmount && (
                 <p className="refund-highlight">
                   <strong>Refunded:</strong> {formatTokenAmount(refundAmount)} tokens (no fee)
                 </p>
               )}
               
-              {/* Show winner and winnings */}
               {winner && <p><strong>Winner:</strong> {formatAddress(winner)}</p>}
               {winnings && (
                 <>
@@ -803,21 +782,6 @@ const RockPaperScissors = ({ onClose }) => {
                     </p>
                   )}
                 </>
-              )}
-              
-              {/* Show bot resolution info */}
-              {resolvedByBot && (
-                <div style={{ 
-                  background: 'rgba(46, 204, 113, 0.1)', 
-                  padding: '10px', 
-                  borderRadius: '8px', 
-                  marginTop: '15px',
-                  border: '1px solid #2ecc71'
-                }}>
-                  <p style={{ margin: 0, color: '#2ecc71', fontWeight: 600 }}>
-                    🤖 Automatically resolved by bot service - no manual intervention required!
-                  </p>
-                </div>
               )}
             </div>
           </div>
@@ -850,7 +814,7 @@ const RockPaperScissors = ({ onClose }) => {
     </div>
   );
 
-  // UPDATED: Game card render for new contract with bot integration
+  // Game card render
   const renderGameCard = (gameData) => {
     const { id, game } = gameData;
     const gameId = id.toString();
@@ -883,7 +847,6 @@ const RockPaperScissors = ({ onClose }) => {
         </div>
         
         <div className="game-actions">
-          {/* Show join game option to all users when wallet is connected */}
           {game.state === 0 && account && !isPlayer1 && (
             <div className="join-game">
               {ethers.utils.parseEther(tokenBalance).gte(game.bet) ? (
@@ -906,7 +869,6 @@ const RockPaperScissors = ({ onClose }) => {
             </div>
           )}
           
-          {/* Show connect wallet message if not connected but game is joinable */}
           {game.state === 0 && !account && (
             <div className="connect-to-join">
               <button onClick={connectWallet} className="connect-wallet-btn">
@@ -925,32 +887,21 @@ const RockPaperScissors = ({ onClose }) => {
             </button>
           )}
           
-          {/* UPDATED: Show bot auto-resolving message */}
           {game.state === 1 && (
             <div className="auto-resolving">
               <div className="auto-resolve-text">
-                🤖 Bot service will auto-resolve in ~5 seconds
-                <br />
-                <small>
-                  {isPlayer1 && "Your choice will be revealed automatically by bot"}
-                  {isPlayer2 && "Waiting for bot to reveal opponent's choice"}
-                  {!isPlayer1 && !isPlayer2 && "Bot processing players' choices"}
-                </small>
-              </div>
-              <div className="timer-indicator">
-                🔄 Automatic processing by bot service
+                Waiting for game resolution...
               </div>
             </div>
           )}
           
-          {/* Finished games */}
           {(game.state === 2 || game.state === 3 || game.state === 4) && (
             <div className="game-finished">
               <div className="finished-text">
                 Game {GAME_STATES[game.state].toLowerCase()}
                 {game.state === 4 && ': Both players refunded (no fee)'}
                 {game.state === 2 && game.winner && `: Winner ${formatAddress(game.winner)}`}
-                {game.autoResolved && " 🤖 (Auto-resolved)"}
+                {game.autoResolved && " (Auto-resolved)"}
               </div>
             </div>
           )}
@@ -1027,10 +978,6 @@ const RockPaperScissors = ({ onClose }) => {
           {selectedChoice !== null && (
             <div className="selection-feedback">
               Selected: {CHOICES[selectedChoice].name} {CHOICES[selectedChoice].icon}
-              <br />
-              <small style={{ color: '#2ecc71' }}>
-                🤖 Bot will automatically reveal your choice when Player 2 joins!
-              </small>
             </div>
           )}
         </div>
@@ -1076,20 +1023,8 @@ const RockPaperScissors = ({ onClose }) => {
             !networkCorrect
           }
         >
-          {loading ? 'Creating...' : 'Create Game (Bot Auto-Reveal)'}
+          {loading ? 'Creating...' : 'Create Game'}
         </button>
-        
-        <div style={{ 
-          marginTop: '15px', 
-          padding: '10px', 
-          background: 'rgba(46, 204, 113, 0.1)', 
-          borderRadius: '8px',
-          border: '1px solid #2ecc71'
-        }}>
-          <p style={{ margin: 0, color: '#2ecc71', fontSize: '0.9em' }}>
-            ✨ <strong>Fully Automated:</strong> Once Player 2 joins, our bot will automatically reveal your choice and resolve the game. No additional signatures required!
-          </p>
-        </div>
       </div>
     </div>
   );
@@ -1112,12 +1047,12 @@ const RockPaperScissors = ({ onClose }) => {
             const isPlayer1 = game.p1.toLowerCase() === account?.toLowerCase();
             const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
             const isWinner = game.winner && game.winner.toLowerCase() === account?.toLowerCase();
-            const isTie = game.state === 4; // Tied state
+            const isTie = game.state === 4;
             
             return (
               <div key={gameId} className="history-item">
                 <div className="history-header">
-                  <span className="game-id">Game #{gameId} {game.autoResolved && "🤖"}</span>
+                  <span className="game-id">Game #{gameId} {game.autoResolved && "⚡"}</span>
                   <span className={`result ${isTie ? 'tie' : isWinner ? 'won' : (isPlayer1 || isPlayer2) ? 'lost' : 'neutral'}`}>
                     {isTie ? 'TIE' : isWinner ? 'WON' : (isPlayer1 || isPlayer2) ? 'LOST' : 'NEUTRAL'}
                   </span>
@@ -1127,7 +1062,7 @@ const RockPaperScissors = ({ onClose }) => {
                   {!isTie && game.winner && <div>Winner: {formatAddress(game.winner)}</div>}
                   {isTie && <div>Result: Both players refunded (no fee)</div>}
                   <div>Players: {formatAddress(game.p1)} vs {formatAddress(game.p2)}</div>
-                  {game.autoResolved && <div style={{ color: '#2ecc71' }}>🤖 Auto-resolved by bot</div>}
+                  {game.autoResolved && <div style={{ color: '#2ecc71' }}>⚡ Auto-resolved</div>}
                 </div>
               </div>
             );
@@ -1204,7 +1139,7 @@ const RockPaperScissors = ({ onClose }) => {
     <div className="rps-game-modal">
       <div className="rps-game-content">
         <div className="rps-header">
-          <h1>Rock Paper Scissors 🤖</h1>
+          <h1>Rock Paper Scissors</h1>
           <div className="header-info">
             {!account ? (
               <button 
@@ -1226,18 +1161,6 @@ const RockPaperScissors = ({ onClose }) => {
           </div>
         </div>
 
-        {/* Bot info banner */}
-        <div style={{
-          background: 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)',
-          color: 'white',
-          padding: '10px 20px',
-          textAlign: 'center',
-          fontWeight: 600
-        }}>
-          🤖 Fully Automated - Bot handles all reveals automatically!
-        </div>
-
-        {/* Show games even without wallet connection */}
         {account && !networkCorrect ? (
           <div className="rps-content">
             {renderNetworkWarning()}
@@ -1289,7 +1212,6 @@ const RockPaperScissors = ({ onClose }) => {
               {currentView === 'history' && account && renderGameHistory()}
               {currentView === 'stats' && account && renderPlayerStats()}
               
-              {/* Show connect prompt for non-game views if not connected */}
               {!account && currentView !== 'games' && (
                 <div className="connect-prompt">
                   <h2>Connect Your Wallet</h2>
@@ -1307,7 +1229,6 @@ const RockPaperScissors = ({ onClose }) => {
           </>
         )}
         
-        {/* Game Result Popup */}
         {renderGameResultPopup()}
       </div>
     </div>
