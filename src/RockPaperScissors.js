@@ -8,7 +8,7 @@ import losePng from './assets/lose.png';
 import tiePng from './assets/tie.png';
 
 // UPDATED CONTRACT ADDRESS - Your deployed contract
-const CONTRACT_ADDRESS = '0xf4426225B5642D63a4d39973895893663fcE1F2a';
+const CONTRACT_ADDRESS = '0xC46871Ee29456a1A2aE582D6352a37d29BE3Bc74';
 const TOKEN_ADDRESS = '0xB9C188BC558a82a1eE9E75AE0857df443F407632';
 
 // Backend service URL (bot service endpoint)
