@@ -12,7 +12,7 @@ const CONTRACT_ADDRESS = '0xC46871Ee29456a1A2aE582D6352a37d29BE3Bc74';
 const TOKEN_ADDRESS = '0xB9C188BC558a82a1eE9E75AE0857df443F407632';
 
 // Backend service URL (bot service endpoint)
-const BOT_SERVICE_URL = process.env.REACT_APP_BOT_SERVICE_URL || 'http://localhost:3001';
+const BOT_SERVICE_URL = process.env.REACT_APP_BOT_SERVICE_URL || 'http://10.106.0.2:3001';
 
 // Avalanche network configuration
 const AVALANCHE_NETWORK = {
