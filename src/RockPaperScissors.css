@@ -1407,3 +1407,44 @@
     font-size: 1.5em;
   }
 }
+
+
+/* Game Result Popup */
+.game-result-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease-in-out;
+  /* Mobile scroll capability */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 0;
+  box-sizing: border-box;
+}
+
+.game-result-popup {
+  background: #1a1a1a;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  color: white;
+  text-align: center;
+  animation: popupSlideIn 0.4s ease-out;
+  border: 1px solid #333333;
+  /* Prevent popup from being too tall on mobile */
+  max-height: 90vh;
+  overflow-y: auto;
+  /* Ensure popup stays in view */
+  margin: auto;
+  /* Prevent MetaMask overlay interference */
+  position: relative;
+}
