@@ -110,46 +110,137 @@
   font-size: 1em;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 8px 32px rgba(255, 107, 53, 0.6),
+    0 4px 16px rgba(255, 147, 30, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.connect-wallet-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%);
+  transition: left 0.6s ease;
+}
+
+.connect-wallet-btn:hover::before {
+  left: 100%;
 }
 
 .connect-wallet-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 12px 40px rgba(255, 107, 53, 0.8),
+    0 6px 20px rgba(255, 147, 30, 0.6),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
   background: linear-gradient(135deg, #FF7A45 0%, #F79B2E 100%);
+}
+
+.connect-wallet-btn:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 
+    0 6px 20px rgba(255, 107, 53, 0.6),
+    0 3px 10px rgba(255, 147, 30, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .connect-wallet-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
+}
+
+.connect-wallet-btn:disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.2);
 }
 
 .connect-wallet-btn.large {
   font-size: 1.2em;
   padding: 15px 30px;
   margin-top: 20px;
+  box-shadow: 
+    0 10px 40px rgba(255, 107, 53, 0.7),
+    0 5px 20px rgba(255, 147, 30, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .close-btn {
-  background: #ff4757;
+  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
   border: none;
   color: white;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  font-size: 1.5em;
+  font-size: 1.3em;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 
+    0 6px 20px rgba(255, 71, 87, 0.4),
+    0 3px 10px rgba(255, 55, 66, 0.3),
+    inset 0 1px 3px rgba(255, 255, 255, 0.2),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.close-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, 
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.close-btn:hover::before {
+  opacity: 1;
 }
 
 .close-btn:hover {
-  background: #ff3742;
-  transform: scale(1.1);
+  background: linear-gradient(135deg, #ff5767 0%, #ff4752 100%);
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 
+    0 8px 25px rgba(255, 71, 87, 0.6),
+    0 4px 15px rgba(255, 55, 66, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.close-btn:active {
+  transform: scale(1.05) rotate(90deg);
+  box-shadow: 
+    0 4px 15px rgba(255, 71, 87, 0.4),
+    0 2px 8px rgba(255, 55, 66, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Connect Prompt */
@@ -893,6 +984,11 @@
   align-items: center;
   z-index: 2000;
   animation: fadeIn 0.3s ease-in-out;
+  /* Mobile scroll capability */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 0;
+  box-sizing: border-box;
 }
 
 .game-result-popup {
@@ -906,6 +1002,13 @@
   text-align: center;
   animation: popupSlideIn 0.4s ease-out;
   border: 1px solid #333333;
+  /* Prevent popup from being too tall on mobile */
+  max-height: 90vh;
+  overflow-y: auto;
+  /* Ensure popup stays in view */
+  margin: auto;
+  /* Prevent MetaMask overlay interference */
+  position: relative;
 }
 
 @keyframes popupSlideIn {
@@ -1002,6 +1105,7 @@
   color: #FF6B35;
 }
 
+/* Better styling for the close button in popup */
 .close-popup-btn {
   background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
   border: none;
@@ -1011,16 +1115,54 @@
   font-size: 1.1em;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 8px 32px rgba(255, 107, 53, 0.5),
+    0 4px 16px rgba(255, 147, 30, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 200px;
+  position: relative;
+  overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.close-popup-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%);
+  transition: left 0.6s ease;
+}
+
+.close-popup-btn:hover::before {
+  left: 100%;
 }
 
 .close-popup-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 12px 40px rgba(255, 107, 53, 0.7),
+    0 6px 20px rgba(255, 147, 30, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
   background: linear-gradient(135deg, #FF7A45 0%, #F79B2E 100%);
+}
+
+.close-popup-btn:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 
+    0 6px 20px rgba(255, 107, 53, 0.5),
+    0 3px 10px rgba(255, 147, 30, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Updated CSS for game result popup enhancements */
@@ -1138,20 +1280,6 @@
   75% {
     transform: rotate(5deg);
   }
-}
-
-/* Better styling for the close button */
-.close-popup-btn {
-  margin-top: 20px;
-  font-size: 1.1em;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.close-popup-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.5);
 }
 
 /* Header buttons container */
@@ -1272,7 +1400,7 @@
   }
 }
 
-/* Responsive Design */
+/* Mobile-specific fixes for MetaMask browser */
 @media (max-width: 768px) {
   .rps-game-content {
     width: 100%;
@@ -1361,6 +1489,107 @@
   .warning-content {
     padding: 30px 20px;
   }
+
+  /* Mobile-specific popup adjustments */
+  .game-result-popup-overlay {
+    /* Use flex-start instead of center to prevent centering issues */
+    align-items: flex-start;
+    /* Add safe area insets for devices with notches */
+    padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 10px) 
+             env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 10px);
+    padding-top: max(env(safe-area-inset-top, 20px), 60px);
+    padding-bottom: max(env(safe-area-inset-bottom, 20px), 80px);
+  }
+
+  .game-result-popup {
+    padding: 25px 20px;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    /* Reduce max-height to prevent overlap with MetaMask overlay */
+    max-height: calc(100vh - 160px);
+    width: 95%;
+    max-width: 400px;
+    border-radius: 15px;
+    /* Ensure content is scrollable if needed */
+    overflow-y: auto;
+    /* Prevent text selection issues on mobile */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .result-header {
+    margin-bottom: 20px;
+  }
+
+  .result-header h2 {
+    font-size: 1.4em;
+    margin-bottom: 10px;
+  }
+
+  .result-icon {
+    font-size: 3em;
+    margin-bottom: 10px;
+  }
+
+  .result-image {
+    width: 80px;
+    height: 80px;
+  }
+
+  .result-details {
+    padding: 20px 15px;
+    margin-bottom: 20px;
+  }
+
+  .choices-display {
+    padding: 12px;
+    margin: 12px 0;
+  }
+
+  .choice-row {
+    margin: 6px 0;
+    padding: 6px 0;
+    font-size: 0.9em;
+  }
+
+  .game-info p {
+    margin: 8px 0;
+    font-size: 1em;
+  }
+
+  .close-popup-btn {
+    padding: 12px 24px;
+    font-size: 1em;
+    margin-top: 15px;
+    border-radius: 20px;
+    /* Ensure button is always accessible */
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+  }
+
+  /* Additional mobile safety for very small screens */
+  @media (max-height: 600px) {
+    .game-result-popup {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      max-height: calc(100vh - 120px);
+      padding: 20px 15px;
+    }
+
+    .result-icon {
+      font-size: 2.5em;
+    }
+
+    .result-image {
+      width: 60px;
+      height: 60px;
+    }
+
+    .result-header h2 {
+      font-size: 1.2em;
+    }
+  }
 }
 
 @media (max-width: 480px) {
@@ -1406,45 +1635,106 @@
   .warning-content h3 {
     font-size: 1.5em;
   }
+
+  /* Ultra-small screen popup adjustments */
+  .game-result-popup {
+    padding: 20px 15px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    max-height: calc(100vh - 100px);
+  }
+
+  .result-header h2 {
+    font-size: 1.1em;
+  }
+
+  .result-details {
+    padding: 15px 10px;
+    margin-bottom: 15px;
+  }
+
+  .close-popup-btn {
+    padding: 10px 20px;
+    font-size: 0.9em;
+  }
 }
 
+/* Special fixes for MetaMask mobile browser */
+@media screen and (max-width: 768px) and (orientation: portrait) {
+  .game-result-popup-overlay {
+    /* Force scroll behavior on mobile */
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    /* Position overlay to account for MetaMask UI */
+    padding-top: max(env(safe-area-inset-top), 80px);
+    padding-bottom: max(env(safe-area-inset-bottom), 100px);
+  }
 
-/* Game Result Popup */
-.game-result-popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.9);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  animation: fadeIn 0.3s ease-in-out;
-  /* Mobile scroll capability */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 20px 0;
-  box-sizing: border-box;
+  .game-result-popup {
+    /* Ensure popup doesn't get stuck behind MetaMask overlay */
+    position: relative;
+    z-index: 2001;
+    /* Make it more compact */
+    min-height: auto;
+    max-height: calc(100vh - 180px);
+    /* Add visual indicator that content is scrollable */
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.8),
+      inset 0 -20px 20px -20px rgba(255, 107, 53, 0.1);
+  }
+
+  /* Make close button more prominent and accessible */
+  .close-popup-btn {
+    background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%) !important;
+    box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4) !important;
+    padding: 15px 30px !important;
+    font-size: 1.1em !important;
+    font-weight: 700 !important;
+    border-radius: 25px !important;
+    margin-top: 25px !important;
+    width: 100% !important;
+    max-width: 250px !important;
+    /* Ensure it's always visible */
+    position: sticky;
+    bottom: 10px;
+    z-index: 2002;
+  }
+
+  /* Add touch-friendly spacing */
+  .result-details {
+    margin-bottom: 30px;
+  }
+
+  /* Improve text readability on small screens */
+  .game-info p {
+    line-height: 1.4;
+    margin: 10px 0;
+  }
+
+  .choices-display {
+    border-radius: 8px;
+  }
+
+  .choice-row {
+    padding: 8px 0;
+    border-bottom: 1px solid #444;
+  }
 }
 
-.game-result-popup {
-  background: #1a1a1a;
-  border-radius: 20px;
-  padding: 40px;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-  color: white;
-  text-align: center;
-  animation: popupSlideIn 0.4s ease-out;
-  border: 1px solid #333333;
-  /* Prevent popup from being too tall on mobile */
-  max-height: 90vh;
-  overflow-y: auto;
-  /* Ensure popup stays in view */
-  margin: auto;
-  /* Prevent MetaMask overlay interference */
-  position: relative;
+/* Landscape mode adjustments for mobile */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .game-result-popup-overlay {
+    padding: 20px 10px;
+    align-items: center;
+  }
+
+  .game-result-popup {
+    max-height: 90vh;
+    margin: auto;
+  }
+
+  .close-popup-btn {
+    position: sticky;
+    bottom: 5px;
+  }
 }
