@@ -1,0 +1,583 @@
+.App {
+  text-align: center;
+  min-height: 100vh;
+  width: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.character-container {
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 600px;
+  padding: 0 15px;
+  margin: 0 auto;
+}
+
+.character-frame {
+  padding: 16px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+  position: relative; /* RPS overlay için gerekli */
+}
+
+/* RPS Button - Resmin fiziksel üstünde (overlay değil) - YENİ KONUM */
+.rps-button-top {
+  margin-bottom: 15px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+  animation: slideDown 0.6s ease-out;
+  z-index: 10;
+}
+
+.rps-button-top:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.rps-button-top:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* FlappyGame Button - Geri eklenen CSS */
+.play-button {
+  margin-top: 16px;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  background-color: #4CAF50;
+  padding: 12px 40px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  z-index: 10;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.play-button:hover {
+  background-color: #45a049;
+  animation: none;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+}
+
+.play-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Slide down animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.character-image {
+  width: 100%;
+  height: auto;
+  max-width: 600px;
+  max-height: 600px;
+  object-fit: contain;
+}
+
+.buy-button {
+  margin-top: 24px;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  background-color: #FF5500;
+  padding: 12px 40px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.buy-button:hover {
+  background-color: #FF7700;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+}
+
+.buy-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* RPS Overlay Button - Resmin üstünde */
+.rps-overlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.rps-overlay-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.rps-overlay-button:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.rps-overlay-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* RPS Overlay Button - Resmin üstünde */
+.rps-overlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.rps-overlay-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.rps-overlay-button:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.rps-overlay-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* Flappy Button - Sadece 3. character'de */
+.flappy-button {
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  padding: 12px 32px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.flappy-button:hover {
+  background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+}
+
+.flappy-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Volume Slider Styles */
+.volume-slider-container {
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 20px;
+  padding: 8px 16px;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  z-index: 15;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease;
+  width: 90%;
+  max-width: 350px;
+}
+
+.volume-slider-label {
+  color: white;
+  font-weight: bold;
+  margin-right: 10px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.volume-slider {
+  width: 100%;
+  max-width: 150px;
+  height: 8px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #555;
+  border-radius: 4px;
+  outline: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FF5500;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FF5500;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.volume-value {
+  color: white;
+  font-weight: bold;
+  margin-left: 10px;
+  min-width: 44px;
+  text-align: right;
+  font-size: 14px;
+}
+
+/* Confetti Animation Styles */
+.confetti-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.confetti {
+  position: absolute;
+  top: -64px;
+  width: 64px;
+  height: 64px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  animation: fall linear forwards;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Chart Button Styles */
+.chart-button {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 15px 30px; /* Larger clickable area */
+  background-color: #FF5500; /* Same as buy button */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: 20;
+  transition: transform 0.2s; /* Only for hover effect */
+  touch-action: manipulation; /* Improve touch behavior */
+}
+
+.chart-button:hover {
+  background-color: #FF7700; /* Same hover as buy button */
+  transform: scale(1.1);
+}
+
+/* Chart Modal Styles */
+.chart-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 30;
+  animation: fadeIn 0.3s;
+}
+
+.chart-modal-content {
+  background-color: white;
+  width: 95%;
+  max-width: 1200px;
+  height: 80vh;
+  max-height: 800px;
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  font-weight: bold;
+  background-color: #FF3300;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  touch-action: manipulation; /* Improve touch behavior */
+}
+
+.close-button:hover {
+  background-color: #CC0000;
+  transform: scale(1.1);
+}
+
+/* Disclaimer Styles */
+.disclaimer {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8); /* Increased opacity for better visibility */
+  text-align: center;
+  padding: 5px 10px;
+  z-index: 10;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); /* Added shadow for better readability */
+  width: 90%;
+  max-width: 500px;
+}
+
+.twitter-link {
+  color: #1DA1F2;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.2s;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); /* Shadow for link too */
+}
+
+.twitter-link:hover {
+  color: #0d8bd9;
+  text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobil responsiveness */
+@media (max-width: 768px) {
+  .character-container {
+    width: 95%;
+    max-width: 450px;
+  }
+
+  .character-frame {
+    padding: 10px;
+  }
+
+  .character-image {
+    max-width: 100%;
+  }
+
+  .buy-button, .play-button {
+    font-size: 20px;
+    padding: 10px 30px;
+  }
+
+  .rps-overlay-button {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+
+  .chart-button {
+    font-size: 16px;
+    padding: 12px 25px;
+  }
+
+  .volume-slider-container {
+    padding: 6px 12px;
+    max-width: 300px;
+  }
+
+  .volume-slider-label, .volume-value {
+    font-size: 12px;
+  }
+
+  .chart-modal-content {
+    width: 95%;
+    height: 90vh;
+    padding: 15px;
+  }
+
+  .close-button {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  
+  .disclaimer {
+    font-size: 10px;
+    width: 95%;
+  }
+}
+
+/* Çok küçük ekranlar için ek boyut düzenlemeleri */
+@media (max-width: 480px) {
+  .character-container {
+    width: 90%;
+  }
+
+  .buy-button, .play-button {
+    font-size: 18px;
+    padding: 8px 24px;
+  }
+  
+  .rps-overlay-button {
+    font-size: 12px;
+    padding: 8px 16px;
+  }
+  
+  .chart-button {
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+  
+  .volume-slider-container {
+    max-width: 250px;
+  }
+}
+
+/* Additional styles for better game integration */
+.game-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Smooth transitions for all modals */
+.chart-modal,
+.rps-game-modal {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

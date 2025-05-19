@@ -1,0 +1,151 @@
+.flappy-game-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s;
+}
+
+.flappy-game-header {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-bottom: 10px;
+  padding: 0 15px;
+}
+
+.close-button {
+  position: absolute;
+  top: 0;
+  right: 15px;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  font-weight: bold;
+  background-color: #FF3300;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  touch-action: manipulation; /* Improve touch behavior */
+}
+
+.close-button:hover {
+  background-color: #CC0000;
+  transform: scale(1.1);
+}
+
+.game-instructions {
+  color: white;
+  text-align: center;
+  font-size: 18px;
+  margin: 0 auto;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.flappy-canvas {
+  width: 95%;
+  max-width: 800px;
+  height: 70vh;
+  max-height: 600px;
+  background-color: #70c5ce;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  touch-action: manipulation; /* Improve touch behavior */
+}
+
+.flappy-game-footer {
+  width: 95%;
+  max-width: 800px;
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.score-display {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobil uyumluluk için medya sorguları */
+@media (max-width: 768px) {
+  .game-instructions {
+    font-size: 16px;
+    padding: 8px;
+  }
+  
+  .flappy-canvas {
+    height: 60vh;
+  }
+  
+  .score-display {
+    padding: 8px 16px;
+    font-size: 16px;
+  }
+  
+  .close-button {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    top: 5px;
+    right: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-instructions {
+    font-size: 14px;
+    padding: 6px;
+  }
+  
+  .flappy-canvas {
+    height: 50vh;
+  }
+  
+  .score-display {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+  
+  .close-button {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}
