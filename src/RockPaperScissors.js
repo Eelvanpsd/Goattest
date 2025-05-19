@@ -123,6 +123,10 @@ const RockPaperScissors = ({ onClose }) => {
   // Add mobile-specific state and handlers
   const [isMobile, setIsMobile] = useState(false);
 
+  // Refs for cleanup
+  const eventListenersRef = useRef(new Map());
+  const intervalsRef = useRef(new Map());
+
   // Check if device is mobile
   useEffect(() => {
     const checkIsMobile = () => {
@@ -240,7 +244,27 @@ const RockPaperScissors = ({ onClose }) => {
           return { id: id.toString(), game, deadline };
         })
       );
-      setActiveGames(activeGamesData);
+      
+      // Filter out games that are in "Joined" state (state 1) for non-connected users
+      // and games that are "Joined" but user is not a player
+      const filteredGames = activeGamesData.filter(gameData => {
+        const { game } = gameData;
+        
+        // If user is not connected, only show "Waiting" games (state 0)
+        if (!account) {
+          return game.state === 0;
+        }
+        
+        // If user is connected, show all active games where user is involved
+        // or games that are still in "Waiting" state
+        const isPlayer1 = game.p1.toLowerCase() === account.toLowerCase();
+        const isPlayer2 = game.p2.toLowerCase() === account.toLowerCase();
+        const isInvolved = isPlayer1 || isPlayer2;
+        
+        return game.state === 0 || isInvolved;
+      });
+      
+      setActiveGames(filteredGames);
       
     } catch (error) {
       console.error('Failed to load public data:', error);
@@ -501,7 +525,29 @@ const RockPaperScissors = ({ onClose }) => {
           return { id: id.toString(), game, deadline };
         })
       );
-      setActiveGames(activeGamesData);
+      
+      // Filter active games: show "Waiting" games to everyone, 
+      // but "Joined" games only to players involved
+      const filteredActiveGames = activeGamesData.filter(gameData => {
+        const { game } = gameData;
+        
+        // Show all "Waiting" games (state 0)
+        if (game.state === 0) {
+          return true;
+        }
+        
+        // For "Joined" games (state 1), only show if user is involved
+        if (game.state === 1) {
+          const isPlayer1 = game.p1.toLowerCase() === userAccount.toLowerCase();
+          const isPlayer2 = game.p2.toLowerCase() === userAccount.toLowerCase();
+          return isPlayer1 || isPlayer2;
+        }
+        
+        // Don't show other states (Done, Cancelled, Tied) in active games
+        return false;
+      });
+      
+      setActiveGames(filteredActiveGames);
       
       const finishedIds = await gameContract.getFinished(20);
       const finishedGamesData = await Promise.all(
@@ -1094,13 +1140,20 @@ const RockPaperScissors = ({ onClose }) => {
             const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
             const isWinner = game.winner && game.winner.toLowerCase() === account?.toLowerCase();
             const isTie = game.state === 4;
+            const isInvolved = isPlayer1 || isPlayer2;
             
             return (
               <div key={gameId} className="history-item">
                 <div className="history-header">
                   <span className="game-id">Game #{gameId} {game.autoResolved && "⚡"}</span>
-                  <span className={`result ${isTie ? 'tie' : isWinner ? 'won' : (isPlayer1 || isPlayer2) ? 'lost' : 'neutral'}`}>
-                    {isTie ? 'TIE' : isWinner ? 'WON' : (isPlayer1 || isPlayer2) ? 'LOST' : 'NEUTRAL'}
+                  <span className={`result ${
+                    isTie ? 'tie' : 
+                    !isInvolved ? 'neutral' : 
+                    isWinner ? 'won' : 'lost'
+                  }`}>
+                    {isTie ? 'TIE' : 
+                     !isInvolved ? 'WATCHED' : 
+                     isWinner ? 'WON' : 'LOST'}
                   </span>
                 </div>
                 <div className="history-details">
@@ -1108,6 +1161,7 @@ const RockPaperScissors = ({ onClose }) => {
                   {!isTie && game.winner && <div>Winner: {formatAddress(game.winner)}</div>}
                   {isTie && <div>Result: Both players refunded (no fee)</div>}
                   <div>Players: {formatAddress(game.p1)} vs {formatAddress(game.p2)}</div>
+                  {!isInvolved && <div style={{ color: '#f39c12' }}>👁️ You observed this game</div>}
                   {game.autoResolved && <div style={{ color: '#2ecc71' }}>⚡ Auto-resolved</div>}
                 </div>
               </div>

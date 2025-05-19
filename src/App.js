@@ -331,7 +331,7 @@ function App() {
       
       {/* Disclaimer at bottom */}
       <div className="disclaimer">
-        For entertainment purposes only. I'm not affiliated with the token.{' '}
+        For entertainment purposes only.{' '}
         <a 
           href="https://arena.social/Eelvanpsd" 
           target="_blank"
