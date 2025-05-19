@@ -120,9 +120,24 @@ const RockPaperScissors = ({ onClose }) => {
   // Bot connection state
   const [botConnected, setBotConnected] = useState(false);
   
-  // Refs for cleanup
-  const eventListenersRef = useRef(new Map());
-  const intervalsRef = useRef(new Map());
+  // Add mobile-specific state and handlers
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    window.addEventListener('orientationchange', checkIsMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+      window.removeEventListener('orientationchange', checkIsMobile);
+    };
+  }, []);
 
   // Bot connection test function
   const testBotConnection = async () => {
@@ -805,7 +820,14 @@ const RockPaperScissors = ({ onClose }) => {
           key={choice}
           className={`choice-btn ${!hideSelected && selectedChoice === choice ? 'selected' : ''}`}
           onClick={() => onSelect(choice)}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            if (!disabled && !loading) {
+              onSelect(choice);
+            }
+          }}
           disabled={disabled || loading}
+          style={{ touchAction: 'manipulation' }}
         >
           <span className="choice-icon">{CHOICES[choice].icon}</span>
           <span className="choice-name">{CHOICES[choice].name}</span>
@@ -932,15 +954,39 @@ const RockPaperScissors = ({ onClose }) => {
                 setLoading(false);
               }
             }}
+            onTouchEnd={async (e) => {
+              e.preventDefault();
+              if (!loading) {
+                setLoading(true);
+                try {
+                  if (account && contract && tokenContract) {
+                    await loadGameData(contract, tokenContract, account);
+                  } else {
+                    await loadPublicData();
+                  }
+                } catch (error) {
+                  console.error('Refresh failed:', error);
+                  setError('Failed to refresh games');
+                } finally {
+                  setLoading(false);
+                }
+              }
+            }}
             disabled={loading}
             title="Refresh game list"
+            style={{ touchAction: 'manipulation' }}
           >
             {loading ? '↻ Refreshing...' : '↻ Refresh'}
           </button>
           <button 
             className="create-game-btn"
             onClick={() => setCurrentView('create')}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              if (account && networkCorrect) setCurrentView('create');
+            }}
             disabled={!account || !networkCorrect}
+            style={{ touchAction: 'manipulation' }}
           >
             Create New Game
           </button>
@@ -1145,7 +1191,12 @@ const RockPaperScissors = ({ onClose }) => {
               <button 
                 className="connect-wallet-btn"
                 onClick={connectWallet}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  if (!isConnecting) connectWallet();
+                }}
                 disabled={isConnecting}
+                style={{ touchAction: 'manipulation' }}
               >
                 {isConnecting ? 'Connecting...' : 'Connect Wallet'}
               </button>
@@ -1157,7 +1208,15 @@ const RockPaperScissors = ({ onClose }) => {
                 )}
               </div>
             )}
-            <button className="close-btn" onClick={onClose}>✕</button>
+            <button 
+              className="close-btn" 
+              onClick={onClose}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                onClose();
+              }}
+              style={{ touchAction: 'manipulation' }}
+            >✕</button>
           </div>
         </div>
 
@@ -1168,39 +1227,41 @@ const RockPaperScissors = ({ onClose }) => {
         ) : (
           <>
             <div className="rps-nav">
-              <button 
-                className={`nav-btn ${currentView === 'games' ? 'active' : ''}`}
-                onClick={() => setCurrentView('games')}
-              >
-                Active Games
-              </button>
-              <button 
-                className={`nav-btn ${currentView === 'create' ? 'active' : ''}`}
-                onClick={() => setCurrentView('create')}
-                disabled={!account}
-              >
-                Create Game
-              </button>
-              <button 
-                className={`nav-btn ${currentView === 'history' ? 'active' : ''}`}
-                onClick={() => setCurrentView('history')}
-                disabled={!account}
-              >
-                History
-              </button>
-              <button 
-                className={`nav-btn ${currentView === 'stats' ? 'active' : ''}`}
-                onClick={() => setCurrentView('stats')}
-                disabled={!account}
-              >
-                Statistics
-              </button>
+              {['games', 'create', 'history', 'stats'].map((view) => (
+                <button 
+                  key={view}
+                  className={`nav-btn ${currentView === view ? 'active' : ''}`}
+                  onClick={() => setCurrentView(view)}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    if (view === 'create' || view === 'history' || view === 'stats') {
+                      if (account) setCurrentView(view);
+                    } else {
+                      setCurrentView(view);
+                    }
+                  }}
+                  disabled={!account && (view === 'create' || view === 'history' || view === 'stats')}
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  {view === 'games' && 'Active Games'}
+                  {view === 'create' && 'Create Game'}
+                  {view === 'history' && 'History'}
+                  {view === 'stats' && 'Statistics'}
+                </button>
+              ))}
             </div>
 
             {error && (
               <div className="error-message">
                 {error}
-                <button onClick={() => setError('')}>×</button>
+                <button 
+                  onClick={() => setError('')}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    setError('');
+                  }}
+                  style={{ touchAction: 'manipulation' }}
+                >×</button>
               </div>
             )}
 
@@ -1219,7 +1280,12 @@ const RockPaperScissors = ({ onClose }) => {
                   <button 
                     className="connect-wallet-btn large"
                     onClick={connectWallet}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      if (!isConnecting) connectWallet();
+                    }}
                     disabled={isConnecting}
+                    style={{ touchAction: 'manipulation' }}
                   >
                     {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                   </button>
