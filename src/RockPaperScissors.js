@@ -7,9 +7,12 @@ import winPng from './assets/win.png';
 import losePng from './assets/lose.png';
 import tiePng from './assets/tie.png';
 
-// NEW CONTRACT ADDRESS - Updated
-const CONTRACT_ADDRESS = '0x145EE6D59c390F2F4c26b7CB8EECb566c3091509';
+// UPDATED CONTRACT ADDRESS - Your deployed contract
+const CONTRACT_ADDRESS = '0xC46871Ee29456a1A2aE582D6352a37d29BE3Bc74';
 const TOKEN_ADDRESS = '0xB9C188BC558a82a1eE9E75AE0857df443F407632';
+
+// Backend service URL (bot service endpoint)
+const BOT_SERVICE_URL = process.env.REACT_APP_BOT_SERVICE_URL || 'http://localhost:3001';
 
 // Avalanche network configuration
 const AVALANCHE_NETWORK = {
@@ -24,9 +27,8 @@ const AVALANCHE_NETWORK = {
   blockExplorerUrls: ['https://snowtrace.io/']
 };
 
-// NEW CONTRACT ABI - Updated for SecureRockPaperScissors
+// UPDATED CONTRACT ABI - Your deployed contract
 const CONTRACT_ABI = [
-  // Game functions
   "function createGame(uint256 _bet, bytes32 _commitHash) external",
   "function joinGame(uint256 _id, uint8 _choice) external",
   "function reveal(uint256 _id, uint8 _choice, uint256 _nonce) external",
@@ -34,27 +36,32 @@ const CONTRACT_ABI = [
   "function autoReveal(uint256 _id) external",
   "function cancel(uint256 _id) external",
   "function forceCancel(uint256 _id) external",
+  "function addBot(address _bot) external",
+  "function removeBot(address _bot) external",
   
-  // View functions - Updated for new contract structure
+  // View functions
   "function getActive() external view returns (uint256[])",
   "function getFinished(uint256 _limit) external view returns (uint256[])",
   "function getGame(uint256 _id) external view returns (tuple(address p1, address p2, uint256 bet, bytes32 p1CommitHash, uint8 p2Choice, uint8 state, uint256 created, uint256 joinedAt, address winner, uint8 p1Choice, bool autoResolved), uint256)",
   "function getStats(address _player) external view returns (tuple(uint256 played, uint256 won, uint256 bet, uint256 winnings, uint256 ties))",
   "function canAutoResolve(uint256 _id) external view returns (bool)",
   "function hash(uint8 _choice, uint256 _nonce, address _player) external pure returns (bytes32)",
+  "function authorizedBots(address _bot) external view returns (bool)",
   
   // Constants
   "function HOUSE_FEE() external view returns (uint256)",
   "function AUTO_RESOLVE_TIME() external view returns (uint256)",
   "function TIME_TOLERANCE() external view returns (uint256)",
   
-  // Events - Updated for new contract
+  // Events
   "event GameCreated(uint256 indexed id, address indexed p1, uint256 bet)",
   "event PlayerJoined(uint256 indexed id, address indexed p2)",
   "event GameAutoResolved(uint256 indexed id, address indexed winner, uint256 winnings)",
   "event GameTied(uint256 indexed id, uint256 refundAmount)",
   "event GameCancelled(uint256 indexed id)",
-  "event ChoiceRevealed(uint256 indexed id, address indexed p1, uint8 choice)"
+  "event ChoiceRevealed(uint256 indexed id, address indexed p1, uint8 choice)",
+  "event BotAuthorized(address indexed bot)",
+  "event BotRevoked(address indexed bot)"
 ];
 
 // ERC20 ABI (for token operations)
@@ -65,7 +72,7 @@ const ERC20_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)"
 ];
 
-// NEW GAME STATES - Updated for new contract
+// UPDATED GAME STATES - New contract states
 const GAME_STATES = {
   0: 'Waiting',
   1: 'Joined', 
@@ -326,12 +333,12 @@ const RockPaperScissors = ({ onClose }) => {
     }
   }, [contract, tokenContract, account, networkCorrect]);
 
-  // NEW: Enhanced event listener setup with auto-reveal
+  // UPDATED: Event listener setup - Bot handles auto-reveal automatically
   const setupEventListeners = (gameContract) => {
     const events = [
       'GameCreated',
       'PlayerJoined', 
-      'GameAutoResolved',  // NEW event
+      'GameAutoResolved',
       'GameTied',
       'GameCancelled',
       'ChoiceRevealed'
@@ -356,95 +363,36 @@ const RockPaperScissors = ({ onClose }) => {
       const listener = (...args) => {
         console.log(`${eventName} event:`, args);
         
-        // AUTO REFRESH FOR ALL EVENTS
         if (eventName === 'GameCreated') {
-          // Someone created a new game - refresh immediately for all users
           autoRefresh(1000);
         }
         
-        // NEW: Enhanced PlayerJoined handler with auto-reveal
+        // UPDATED: PlayerJoined - Bot service handles auto-reveal, no manual intervention
         if (eventName === 'PlayerJoined') {
           const [gameId] = args;
           
-          // Set up auto-reveal with off-chain computation
-          setTimeout(async () => {
-            try {
-              // Check if we have reveal data for this game
-              const stored = localStorage.getItem(`reveal_${gameId}`);
-              if (!stored) return;
-              
-              const revealData = JSON.parse(atob(stored));
-              
-              // Wait for the auto-resolve timeout + 1 second
-              setTimeout(async () => {
-                try {
-                  console.log(`Attempting auto-reveal for game ${gameId}`);
-                  
-                  // Call autoRevealWithProof with our stored data
-                  const tx = await gameContract.autoRevealWithProof(
-                    gameId,
-                    revealData.choice,
-                    revealData.nonce
-                  );
-                  
-                  console.log(`Auto-reveal transaction sent: ${tx.hash}`);
-                  await tx.wait();
-                  console.log(`Game ${gameId} auto-revealed successfully!`);
-                  
-                  // Clean up stored data
-                  localStorage.removeItem(`reveal_${gameId}`);
-                  setPendingReveals(prev => {
-                    const newMap = new Map(prev);
-                    newMap.delete(gameId.toString());
-                    return newMap;
-                  });
-                  
-                } catch (error) {
-                  console.error(`Auto-reveal failed for game ${gameId}:`, error);
-                  
-                  // Try the deterministic method as backup
-                  try {
-                    console.log(`Trying deterministic auto-reveal for game ${gameId}`);
-                    const backupTx = await gameContract.autoReveal(gameId);
-                    await backupTx.wait();
-                    console.log(`Deterministic auto-reveal successful for game ${gameId}`);
-                    
-                    // Clean up
-                    localStorage.removeItem(`reveal_${gameId}`);
-                    setPendingReveals(prev => {
-                      const newMap = new Map(prev);
-                      newMap.delete(gameId.toString());
-                      return newMap;
-                    });
-                  } catch (backupError) {
-                    console.error(`All auto-reveal methods failed for game ${gameId}:`, backupError);
-                    setError(`Auto-reveal failed for game ${gameId}. Manual intervention may be required.`);
-                  }
-                }
-              }, 6000); // 6 seconds (5 second timeout + 1 second buffer)
-              
-            } catch (error) {
-              console.error('Error setting up auto-reveal:', error);
-            }
-          }, 1000);
+          console.log(`🎮 Game ${gameId} joined - bot service will auto-reveal in ~5 seconds`);
+          console.log('🤖 No manual intervention required for Player 1!');
           
-          // Auto refresh for ALL users when someone joins
+          // Optional: Show feedback to users
+          setTimeout(() => {
+            console.log(`🚀 Game ${gameId} should be auto-resolved by bot service`);
+          }, 6000);
+          
           autoRefresh(1500);
         }
         
         if (eventName === 'ChoiceRevealed') {
-          // Someone revealed - refresh for all users
           autoRefresh(1000);
         }
         
-        // Handle game completion - NEW for auto-resolved games
+        // Handle auto-resolved games
         if (eventName === 'GameAutoResolved') {
           const [gameId, winner, winnings] = args;
           const gameIdStr = gameId.toString();
           const winnerAddr = winner.toLowerCase();
           const userAddr = account?.toLowerCase();
           
-          // Wait a bit and check game details
           setTimeout(async () => {
             try {
               const [gameDetails] = await gameContract.getGame(gameId);
@@ -464,7 +412,8 @@ const RockPaperScissors = ({ onClose }) => {
                   playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
                   opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
                   betAmount: gameDetails.bet,
-                  autoResolved: true
+                  autoResolved: true,
+                  resolvedByBot: true // Bot resolved
                 });
               }
             } catch (error) {
@@ -472,17 +421,15 @@ const RockPaperScissors = ({ onClose }) => {
             }
           }, 1000);
           
-          // Auto refresh when game is done
           autoRefresh(2000);
         }
         
-        // Handle tie event
+        // Handle tie events
         if (eventName === 'GameTied') {
           const [gameId, refundAmount] = args;
           const gameIdStr = gameId.toString();
           const userAddr = account?.toLowerCase();
           
-          // Wait a bit and check game details
           setTimeout(async () => {
             try {
               const [gameDetails] = await gameContract.getGame(gameId);
@@ -497,7 +444,8 @@ const RockPaperScissors = ({ onClose }) => {
                   refundAmount: refundAmount,
                   playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
                   opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
-                  betAmount: gameDetails.bet
+                  betAmount: gameDetails.bet,
+                  resolvedByBot: true
                 });
               }
             } catch (error) {
@@ -505,7 +453,6 @@ const RockPaperScissors = ({ onClose }) => {
             }
           }, 1000);
           
-          // Auto refresh when game is tied
           autoRefresh(2000);
         }
       };
@@ -562,7 +509,7 @@ const RockPaperScissors = ({ onClose }) => {
     return ethers.BigNumber.from(ethers.utils.randomBytes(32));
   };
 
-  // NEW: Create game with secure commitment
+  // UPDATED: Create game with bot service integration
   const createGame = async () => {
     if (!selectedChoice && selectedChoice !== 0) {
       setError('Please select your move');
@@ -615,22 +562,50 @@ const RockPaperScissors = ({ onClose }) => {
       const tx = await contract.createGame(betWei, hash);
       const receipt = await tx.wait();
       
-      // Store reveal data securely (encrypted in localStorage)
-      const revealData = {
-        choice: selectedChoice,
-        nonce: nonce.toString(),
-        account: account,
-        hash: hash
-      };
-      
       // Find the new game ID from events
       const gameCreatedEvent = receipt.events.find(e => e.event === 'GameCreated');
       if (gameCreatedEvent) {
         const gameId = gameCreatedEvent.args.id.toString();
         
-        // Store reveal data with encryption
-        const encrypted = btoa(JSON.stringify(revealData));
-        localStorage.setItem(`reveal_${gameId}`, encrypted);
+        // Prepare reveal data for bot service
+        const revealData = {
+          choice: selectedChoice,
+          nonce: nonce.toString(),
+          account: account,
+          hash: hash
+        };
+        
+        // Send reveal data to bot service
+        try {
+          const encryptedData = btoa(JSON.stringify(revealData));
+          
+          const response = await fetch(`${BOT_SERVICE_URL}/api/store-reveal`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              gameId: gameId,
+              encryptedRevealData: encryptedData
+            })
+          });
+          
+          if (response.ok) {
+            console.log(`✅ Reveal data stored in bot service for game ${gameId}`);
+            console.log('🤖 Bot will automatically reveal when Player 2 joins!');
+          } else {
+            console.error('❌ Failed to store reveal data in bot service');
+            // Fallback: Store locally
+            localStorage.setItem(`reveal_${gameId}`, encryptedData);
+            console.log('💾 Stored reveal data locally as fallback');
+          }
+        } catch (error) {
+          console.error('Error sending reveal data to bot service:', error);
+          // Fallback: Store locally
+          const encryptedData = btoa(JSON.stringify(revealData));
+          localStorage.setItem(`reveal_${gameId}`, encryptedData);
+          console.log('💾 Stored reveal data locally as fallback');
+        }
         
         setPendingReveals(prev => new Map(prev.set(gameId, revealData)));
       }
@@ -685,54 +660,14 @@ const RockPaperScissors = ({ onClose }) => {
       const tx = await contract.joinGame(gameId, choice);
       await tx.wait();
       
+      console.log(`🎮 Joined game ${gameId}! Bot will auto-reveal Player 1's choice in ~5 seconds`);
+      
       // Refresh data
       await loadGameData(contract, tokenContract, account);
       
     } catch (error) {
       console.error('Failed to join game:', error);
       setError('Failed to join game: ' + (error.reason || error.message));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // NEW: Manual reveal (still available but not needed due to auto-reveal)
-  const revealChoice = async (gameId) => {
-    if (!contract) return;
-    
-    try {
-      setLoading(true);
-      setError('');
-      
-      // Get reveal data from storage
-      const stored = localStorage.getItem(`reveal_${gameId}`);
-      if (!stored) {
-        throw new Error('Reveal data not found');
-      }
-      
-      const revealData = JSON.parse(atob(stored));
-      
-      const tx = await contract.reveal(
-        gameId,
-        revealData.choice,
-        revealData.nonce
-      );
-      await tx.wait();
-      
-      // Remove reveal data
-      localStorage.removeItem(`reveal_${gameId}`);
-      setPendingReveals(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(gameId);
-        return newMap;
-      });
-      
-      // Refresh data
-      await loadGameData(contract, tokenContract, account);
-      
-    } catch (error) {
-      console.error('Failed to reveal choice:', error);
-      setError('Failed to reveal choice: ' + (error.reason || error.message));
     } finally {
       setLoading(false);
     }
@@ -779,11 +714,11 @@ const RockPaperScissors = ({ onClose }) => {
     return Math.floor(parseFloat(ethers.utils.formatEther(amount))).toString();
   };
 
-  // Game result popup component - Updated for auto-resolved games
+  // Game result popup component - Updated to show bot resolution
   const renderGameResultPopup = () => {
     if (!gameResultPopup) return null;
     
-    const { gameId, winner, winnings, isWinner, result, refundAmount, playerChoice, opponentChoice, betAmount, autoResolved } = gameResultPopup;
+    const { gameId, winner, winnings, isWinner, result, refundAmount, playerChoice, opponentChoice, betAmount, autoResolved, resolvedByBot } = gameResultPopup;
     
     return (
       <div className="game-result-popup-overlay">
@@ -795,7 +730,7 @@ const RockPaperScissors = ({ onClose }) => {
                   <img src={winPng} alt="Win" className="result-image" />
                 </div>
                 <h2>Congratulations!</h2>
-                <p>You won the game!{autoResolved && " (Auto-resolved)"}</p>
+                <p>You won the game!{resolvedByBot && " 🤖 (Auto-resolved by bot)"}</p>
               </>
             )}
             {result === 'lost' && (
@@ -804,7 +739,7 @@ const RockPaperScissors = ({ onClose }) => {
                   <img src={losePng} alt="Lose" className="result-image" />
                 </div>
                 <h2>Game Over</h2>
-                <p>You lost this round{autoResolved && " (Auto-resolved)"}</p>
+                <p>You lost this round{resolvedByBot && " 🤖 (Auto-resolved by bot)"}</p>
               </>
             )}
             {result === 'tie' && (
@@ -813,7 +748,7 @@ const RockPaperScissors = ({ onClose }) => {
                   <img src={tiePng} alt="Tie" className="result-image" />
                 </div>
                 <h2>It's a Tie!</h2>
-                <p>Both players chose the same - refund issued{autoResolved && " (Auto-resolved)"}</p>
+                <p>Both players chose the same - refund issued{resolvedByBot && " 🤖 (Auto-resolved by bot)"}</p>
               </>
             )}
           </div>
@@ -869,6 +804,21 @@ const RockPaperScissors = ({ onClose }) => {
                   )}
                 </>
               )}
+              
+              {/* Show bot resolution info */}
+              {resolvedByBot && (
+                <div style={{ 
+                  background: 'rgba(46, 204, 113, 0.1)', 
+                  padding: '10px', 
+                  borderRadius: '8px', 
+                  marginTop: '15px',
+                  border: '1px solid #2ecc71'
+                }}>
+                  <p style={{ margin: 0, color: '#2ecc71', fontWeight: 600 }}>
+                    🤖 Automatically resolved by bot service - no manual intervention required!
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           
@@ -900,7 +850,7 @@ const RockPaperScissors = ({ onClose }) => {
     </div>
   );
 
-  // NEW: Updated game card render for new contract
+  // UPDATED: Game card render for new contract with bot integration
   const renderGameCard = (gameData) => {
     const { id, game } = gameData;
     const gameId = id.toString();
@@ -975,20 +925,20 @@ const RockPaperScissors = ({ onClose }) => {
             </button>
           )}
           
-          {/* NEW: Show auto-resolving message */}
+          {/* UPDATED: Show bot auto-resolving message */}
           {game.state === 1 && (
             <div className="auto-resolving">
               <div className="auto-resolve-text">
-                ⚡ Game will auto-resolve in ~5 seconds
+                🤖 Bot service will auto-resolve in ~5 seconds
                 <br />
                 <small>
-                  {isPlayer1 && "Your choice will be revealed automatically"}
-                  {isPlayer2 && "Waiting for opponent's choice to be revealed"}
-                  {!isPlayer1 && !isPlayer2 && "Players' choices being processed"}
+                  {isPlayer1 && "Your choice will be revealed automatically by bot"}
+                  {isPlayer2 && "Waiting for bot to reveal opponent's choice"}
+                  {!isPlayer1 && !isPlayer2 && "Bot processing players' choices"}
                 </small>
               </div>
               <div className="timer-indicator">
-                🔄 Auto-processing in progress
+                🔄 Automatic processing by bot service
               </div>
             </div>
           )}
@@ -1000,6 +950,7 @@ const RockPaperScissors = ({ onClose }) => {
                 Game {GAME_STATES[game.state].toLowerCase()}
                 {game.state === 4 && ': Both players refunded (no fee)'}
                 {game.state === 2 && game.winner && `: Winner ${formatAddress(game.winner)}`}
+                {game.autoResolved && " 🤖 (Auto-resolved)"}
               </div>
             </div>
           )}
@@ -1076,6 +1027,10 @@ const RockPaperScissors = ({ onClose }) => {
           {selectedChoice !== null && (
             <div className="selection-feedback">
               Selected: {CHOICES[selectedChoice].name} {CHOICES[selectedChoice].icon}
+              <br />
+              <small style={{ color: '#2ecc71' }}>
+                🤖 Bot will automatically reveal your choice when Player 2 joins!
+              </small>
             </div>
           )}
         </div>
@@ -1086,7 +1041,6 @@ const RockPaperScissors = ({ onClose }) => {
             type="number"
             value={betAmount}
             onChange={(e) => {
-              // Only allow integers, no decimals
               const value = e.target.value;
               if (value === '' || /^\d+$/.test(value)) {
                 setBetAmount(value);
@@ -1096,7 +1050,6 @@ const RockPaperScissors = ({ onClose }) => {
             step="1"
             min="5000"
             onKeyPress={(e) => {
-              // Prevent decimal point and comma
               if (e.key === '.' || e.key === ',') {
                 e.preventDefault();
               }
@@ -1123,8 +1076,20 @@ const RockPaperScissors = ({ onClose }) => {
             !networkCorrect
           }
         >
-          {loading ? 'Creating...' : 'Create Game'}
+          {loading ? 'Creating...' : 'Create Game (Bot Auto-Reveal)'}
         </button>
+        
+        <div style={{ 
+          marginTop: '15px', 
+          padding: '10px', 
+          background: 'rgba(46, 204, 113, 0.1)', 
+          borderRadius: '8px',
+          border: '1px solid #2ecc71'
+        }}>
+          <p style={{ margin: 0, color: '#2ecc71', fontSize: '0.9em' }}>
+            ✨ <strong>Fully Automated:</strong> Once Player 2 joins, our bot will automatically reveal your choice and resolve the game. No additional signatures required!
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -1152,7 +1117,7 @@ const RockPaperScissors = ({ onClose }) => {
             return (
               <div key={gameId} className="history-item">
                 <div className="history-header">
-                  <span className="game-id">Game #{gameId}</span>
+                  <span className="game-id">Game #{gameId} {game.autoResolved && "🤖"}</span>
                   <span className={`result ${isTie ? 'tie' : isWinner ? 'won' : (isPlayer1 || isPlayer2) ? 'lost' : 'neutral'}`}>
                     {isTie ? 'TIE' : isWinner ? 'WON' : (isPlayer1 || isPlayer2) ? 'LOST' : 'NEUTRAL'}
                   </span>
@@ -1162,6 +1127,7 @@ const RockPaperScissors = ({ onClose }) => {
                   {!isTie && game.winner && <div>Winner: {formatAddress(game.winner)}</div>}
                   {isTie && <div>Result: Both players refunded (no fee)</div>}
                   <div>Players: {formatAddress(game.p1)} vs {formatAddress(game.p2)}</div>
+                  {game.autoResolved && <div style={{ color: '#2ecc71' }}>🤖 Auto-resolved by bot</div>}
                 </div>
               </div>
             );
@@ -1238,7 +1204,7 @@ const RockPaperScissors = ({ onClose }) => {
     <div className="rps-game-modal">
       <div className="rps-game-content">
         <div className="rps-header">
-          <h1>Rock Paper Scissors</h1>
+          <h1>Rock Paper Scissors 🤖</h1>
           <div className="header-info">
             {!account ? (
               <button 
@@ -1258,6 +1224,17 @@ const RockPaperScissors = ({ onClose }) => {
             )}
             <button className="close-btn" onClick={onClose}>✕</button>
           </div>
+        </div>
+
+        {/* Bot info banner */}
+        <div style={{
+          background: 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)',
+          color: 'white',
+          padding: '10px 20px',
+          textAlign: 'center',
+          fontWeight: 600
+        }}>
+          🤖 Fully Automated - Bot handles all reveals automatically!
         </div>
 
         {/* Show games even without wallet connection */}
