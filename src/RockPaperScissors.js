@@ -1239,7 +1239,7 @@ const RockPaperScissors = ({ onClose }) => {
     <div className="rps-game-modal">
       <div className="rps-game-content">
         <div className="rps-header">
-          <h1>Rock Paper Scissors</h1>
+          <h1>Rock Paper GOATsors</h1>
           <div className="header-info">
             {!account ? (
               <button 
