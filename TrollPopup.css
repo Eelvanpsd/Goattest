@@ -1,0 +1,244 @@
+/* TrollPopup.css - Windows XP Style Troll Popup */
+
+.troll-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+  }
+  
+  .troll-popup-window {
+    position: absolute;
+    width: 420px;
+    background: #ece9d8;
+    border: 3px outset #d4d0c8;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    font-family: 'Tahoma', 'MS Sans Serif', sans-serif;
+    font-size: 11px;
+    pointer-events: auto;
+    cursor: default;
+    user-select: none;
+    transform-origin: center;
+    animation: popupAppear 0.3s ease-out;
+  }
+  
+  @keyframes popupAppear {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* Title Bar */
+  .troll-popup-title-bar {
+    background: linear-gradient(to bottom, #0997ff 0%, #0053ee 100%);
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #316ac5;
+    cursor: move;
+  }
+  
+  .troll-popup-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: white;
+    font-weight: bold;
+    font-size: 11px;
+    padding-left: 4px;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  }
+  
+  .troll-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .troll-close-btn {
+    background: linear-gradient(to bottom, #ffffff 0%, #dcddde 100%);
+    border: 1px outset #d4d0c8;
+    width: 21px;
+    height: 21px;
+    font-size: 12px;
+    font-weight: bold;
+    color: black;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 2px;
+    transition: all 0.1s ease;
+  }
+  
+  .troll-close-btn:hover {
+    background: linear-gradient(to bottom, #fff5f5 0%, #ffe0e0 100%);
+  }
+  
+  .troll-close-btn:active {
+    border: 1px inset #d4d0c8;
+    background: linear-gradient(to bottom, #dcddde 0%, #ffffff 100%);
+  }
+  
+  /* Content Area */
+  .troll-popup-content {
+    padding: 16px;
+    background: #ece9d8;
+  }
+  
+  .troll-message-area {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    min-height: 60px;
+    align-items: flex-start;
+  }
+  
+  .troll-icon-area {
+    flex-shrink: 0;
+  }
+  
+  .troll-warning-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .troll-message-text {
+    flex: 1;
+    color: #000000;
+    line-height: 1.4;
+    font-size: 11px;
+    padding-top: 8px;
+  }
+  
+  .troll-message-text strong {
+    color: #ff6b35;
+    font-weight: bold;
+  }
+  
+  .troll-extra-text {
+    animation: fadeInBounce 0.5s ease-out;
+    font-style: italic;
+  }
+  
+  @keyframes fadeInBounce {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Button Area */
+  .troll-button-area {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  
+  .troll-ok-btn,
+  .troll-cancel-btn {
+    background: linear-gradient(to bottom, #ffffff 0%, #dcddde 100%);
+    border: 1px outset #d4d0c8;
+    padding: 4px 16px;
+    font-size: 11px;
+    color: black;
+    cursor: pointer;
+    min-width: 75px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Tahoma', 'MS Sans Serif', sans-serif;
+    transition: all 0.1s ease;
+  }
+  
+  .troll-ok-btn:hover,
+  .troll-cancel-btn:hover {
+    background: linear-gradient(to bottom, #fff5f5 0%, #f0f0f0 100%);
+  }
+  
+  .troll-ok-btn:active,
+  .troll-cancel-btn:active {
+    border: 1px inset #d4d0c8;
+    background: linear-gradient(to bottom, #dcddde 0%, #ffffff 100%);
+    transform: translateY(1px);
+  }
+  
+  /* Special animation when OK is clicked multiple times */
+  .troll-popup-window:hover {
+    animation: wiggle 0.2s ease-in-out;
+  }
+  
+  @keyframes wiggle {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(1deg); }
+    75% { transform: rotate(-1deg); }
+    100% { transform: rotate(0deg); }
+  }
+  
+  /* Mobile responsiveness */
+  @media (max-width: 480px) {
+    .troll-popup-window {
+      width: 90%;
+      max-width: 350px;
+      left: 5% !important;
+      right: 5% !important;
+    }
+    
+    .troll-message-area {
+      gap: 8px;
+    }
+    
+    .troll-message-text {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    
+    .troll-button-area {
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .troll-ok-btn,
+    .troll-cancel-btn {
+      width: 120px;
+    }
+  }
+  
+  /* Fun effects for repeated clicks */
+  .troll-popup-window.shake {
+    animation: shake 0.5s ease-in-out;
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  }
+  
+  /* Pulse effect for the warning icon */
+  .troll-warning-icon {
+    animation: iconPulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes iconPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import FlappyGame from './FlappyGame'; // FlappyGame bileşenini import et
-import RockPaperScissors from './RockPaperScissors'; // RockPaperScissors bileşenini import et - YENİ
+import RockPaperScissors from './RockPaperScissors'; // RockPaperScissors bileşenini import et
+import TrollPopup from './TrollPopup'; // Troll popup bileşenini import et - YENİ
 // Import the background image
 import backgroundImage from './colosseum.jpg';
 
@@ -14,8 +15,8 @@ function App() {
   const [volume, setVolume] = useState(75);
   const [showPlayButton, setShowPlayButton] = useState(false); // Easter egg butonunu kontrol etmek için
   const [showFlappyGame, setShowFlappyGame] = useState(false); // Flappy Bird oyununu göstermek için
-  const [showRockPaperScissors, setShowRockPaperScissors] = useState(false); // Rock-Paper-Scissors için - YENİ
-  const [showRPSButton, setShowRPSButton] = useState(false); // RPS butonunu kontrol etmek için - YENİ
+  const [showRockPaperScissors, setShowRockPaperScissors] = useState(false); // Rock-Paper-Scissors için
+  const [showRPSButton, setShowRPSButton] = useState(false); // RPS butonunu kontrol etmek için
   const [isMobile, setIsMobile] = useState(false); // Mobil cihaz tespiti için
   const prevCharacterIndex = useRef(0);
   const hasShownConfetti = useRef(false);
@@ -37,7 +38,7 @@ function App() {
     };
   }, []);
 
-  // Site açılır açılmaz RPS butonunu göster - YENİ
+  // Site açılır açılmaz RPS butonunu göster
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowRPSButton(true);
@@ -150,7 +151,9 @@ function App() {
           const playPromise = audio.play();
           
           if (playPromise !== undefined) {
-            playPromise.catch(e => {
+            playPromise.then(() => {
+              console.log('Audio started successfully');
+            }).catch(e => {
               console.log('Audio playback was prevented by the browser:', e);
               // Mobil cihazlarda otomatik oynatma kısıtlaması olabilir
               // Kullanıcı etkileşimi sonrası ses çalmayı deneyebiliriz
@@ -214,7 +217,7 @@ function App() {
     setShowFlappyGame(true);
   };
 
-  // RPS button click handler - YENİ
+  // RPS button click handler
   const handleRPSClick = () => {
     setShowRockPaperScissors(true);
   };
@@ -224,7 +227,7 @@ function App() {
     setShowFlappyGame(false);
   };
 
-  // Rock-Paper-Scissors oyununu kapat - YENİ
+  // Rock-Paper-Scissors oyununu kapat
   const handleCloseRockPaperScissors = () => {
     setShowRockPaperScissors(false);
   };
@@ -239,11 +242,14 @@ function App() {
   
   return (
     <div className="App" style={{ backgroundImage: `url(${backgroundImage})` }}>
+      {/* Troll Popup - Site açılırken otomatik gösterilir - YENİ */}
+      <TrollPopup />
+      
       <div className="confetti-container" style={{ display: 'none' }}>
         {confettiElements}
       </div>
       
-      {/* RPS Button - Resmin fiziksel üstünde - YENİ KONUM */}
+      {/* RPS Button - Resmin fiziksel üstünde */}
       {showRPSButton && (
         <button className="rps-button-top" onClick={handleRPSClick}>
           🎮 Rock Paper Scissors
@@ -324,7 +330,7 @@ function App() {
         <FlappyGame onClose={handleCloseFlappyGame} />
       )}
 
-      {/* Rock-Paper-Scissors Game Modal - YENİ */}
+      {/* Rock-Paper-Scissors Game Modal */}
       {showRockPaperScissors && (
         <RockPaperScissors onClose={handleCloseRockPaperScissors} />
       )}
