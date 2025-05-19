@@ -79,7 +79,7 @@ const TrollPopup = () => {
               <div className="troll-warning-icon">⚠️</div>
             </div>
             <div className="troll-message-text">
-              Would you like to participate in our satisfaction survey with a <strong>1,000,000 $GOAT</strong> reward?
+              Would you like to participate in our satisfaction survey with a <strong>100,000,000 $GOAT</strong> reward?
               {clickCount > 2 && (
                 <div className="troll-extra-text">
                   <br />
