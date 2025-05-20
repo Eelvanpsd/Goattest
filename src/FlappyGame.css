@@ -149,3 +149,92 @@
     font-size: 16px;
   }
 }
+
+/* FlappyGame.css dosyasına eklenecek stiller */
+
+/* Yükleme ekranı stilleri */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 95%;
+  max-width: 800px;
+  height: 70vh;
+  max-height: 600px;
+  background-color: #70c5ce;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.loading-screen h2 {
+  font-size: 32px;
+  margin-bottom: 20px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.progress-bar-container {
+  width: 80%;
+  height: 30px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(to right, #ff6b6b, #feca57, #1dd1a1);
+  border-radius: 15px;
+  transition: width 0.3s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Mobil uyumluluk için yükleme ekranı düzenlemeleri */
+@media (max-width: 768px) {
+  .loading-screen {
+    height: 60vh;
+  }
+  
+  .loading-screen h2 {
+    font-size: 28px;
+  }
+  
+  .progress-bar-container {
+    height: 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .loading-screen {
+    height: 50vh;
+  }
+  
+  .loading-screen h2 {
+    font-size: 24px;
+  }
+  
+  .progress-bar-container {
+    height: 20px;
+    width: 90%;
+  }
+  
+  .progress-bar {
+    font-size: 14px;
+  }
+}
