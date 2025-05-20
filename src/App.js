@@ -337,7 +337,7 @@ function App() {
       
       {/* Disclaimer at bottom */}
       <div className="disclaimer">
-        For entertainment purposes only.{' '}
+        For entertainment purposes only. {' '}
         <a 
           href="https://arena.social/Eelvanpsd" 
           target="_blank"
