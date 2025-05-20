@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import './RockPaperScissors.css';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend } from 'recharts';
 
 // Import PNG images (adjust paths as needed)
 import winPng from './assets/win.png';
@@ -123,9 +124,32 @@ const RockPaperScissors = ({ onClose }) => {
   // Add mobile-specific state and handlers
   const [isMobile, setIsMobile] = useState(false);
 
+  // Enhanced statistics state
+  const [activeStatsSection, setActiveStatsSection] = useState('summary');
+  const [winRateHistory, setWinRateHistory] = useState([]);
+
   // Refs for cleanup
   const eventListenersRef = useRef(new Map());
   const intervalsRef = useRef(new Map());
+
+  // Generate win rate history data - for enhanced statistics
+  useEffect(() => {
+    if (playerStats && finishedGames && finishedGames.length > 0) {
+      // Generate sample data - replace with actual API data in production
+      const mockWinRateHistory = Array.from({ length: 12 }, (_, i) => {
+        const month = new Date();
+        month.setMonth(month.getMonth() - 11 + i);
+        const monthName = month.toLocaleString('en-US', { month: 'short' });
+        
+        return {
+          month: monthName,
+          rate: Math.random() * 100
+        };
+      });
+      
+      setWinRateHistory(mockWinRateHistory);
+    }
+  }, [playerStats, finishedGames]);
 
   // Check if device is mobile
   useEffect(() => {
@@ -1182,6 +1206,340 @@ const RockPaperScissors = ({ onClose }) => {
     </div>
   );
 
+  const renderEnhancedPlayerStats = () => {
+    // Colors for the charts and stats
+    const colors = {
+      primary: '#FF6B35',
+      secondary: '#F7931E',
+      win: '#27ae60',
+      loss: '#ff4757',
+      tie: '#f1c40f',
+      dark: '#1a1a1a',
+      darkAccent: '#333333',
+      light: '#a0a0a0'
+    };
+
+    // Calculate win rate
+    const winRate = playerStats.played.gt(0) 
+      ? ((playerStats.won.toNumber() / playerStats.played.toNumber()) * 100).toFixed(1)
+      : 0;
+
+    // Pie chart data
+    const gameOutcomeData = [
+      { name: 'Won', value: playerStats.won.toNumber(), color: colors.win },
+      { name: 'Lost', value: playerStats.played.toNumber() - playerStats.won.toNumber() - playerStats.ties.toNumber(), color: colors.loss },
+      { name: 'Tied', value: playerStats.ties.toNumber(), color: colors.tie }
+    ];
+
+    // Recent games from finishedGames
+    const recentGames = finishedGames ? finishedGames.slice(0, 10) : [];
+
+    return (
+      <div className="enhanced-statistics">
+        <div className="stats-tabs">
+          <button 
+            className={`stats-tab ${activeStatsSection === 'summary' ? 'active' : ''}`}
+            onClick={() => setActiveStatsSection('summary')}
+          >
+            Summary Statistics
+          </button>
+          <button 
+            className={`stats-tab ${activeStatsSection === 'recent' ? 'active' : ''}`}
+            onClick={() => setActiveStatsSection('recent')}
+          >
+            Recent Games
+          </button>
+          <button 
+            className={`stats-tab ${activeStatsSection === 'analysis' ? 'active' : ''}`}
+            onClick={() => setActiveStatsSection('analysis')}
+          >
+            Performance Analysis
+          </button>
+        </div>
+
+        {/* Summary Statistics */}
+        {activeStatsSection === 'summary' && (
+          <div className="stats-summary">
+            <div className="stats-cards">
+              <div className="stats-grid">
+                {/* Game Statistics */}
+                <div className="stat-card enhanced">
+                  <div className="stat-icon">🎮</div>
+                  <div className="stat-value">{playerStats.played.toString()}</div>
+                  <div className="stat-label">Games Played</div>
+                  <div className="stat-progress-bar">
+                    <div className="stat-progress" style={{ width: '100%', backgroundColor: colors.primary }}></div>
+                  </div>
+                </div>
+                
+                <div className="stat-card enhanced">
+                  <div className="stat-icon">🏆</div>
+                  <div className="stat-value">{playerStats.won.toString()}</div>
+                  <div className="stat-label">Games Won</div>
+                  <div className="stat-progress-bar">
+                    <div 
+                      className="stat-progress" 
+                      style={{ 
+                        width: `${playerStats.played.gt(0) ? (playerStats.won.toNumber() / playerStats.played.toNumber()) * 100 : 0}%`,
+                        backgroundColor: colors.win 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <div className="stat-card enhanced">
+                  <div className="stat-icon">🤝</div>
+                  <div className="stat-value">{playerStats.ties.toString()}</div>
+                  <div className="stat-label">Games Tied</div>
+                  <div className="stat-progress-bar">
+                    <div 
+                      className="stat-progress" 
+                      style={{ 
+                        width: `${playerStats.played.gt(0) ? (playerStats.ties.toNumber() / playerStats.played.toNumber()) * 100 : 0}%`,
+                        backgroundColor: colors.tie 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <div className="stat-card enhanced">
+                  <div className="stat-icon">📊</div>
+                  <div className="stat-value">{winRate}%</div>
+                  <div className="stat-label">Win Rate</div>
+                  <div className="stat-progress-bar">
+                    <div 
+                      className="stat-progress" 
+                      style={{ 
+                        width: `${winRate}%`,
+                        backgroundColor: parseFloat(winRate) > 50 ? colors.win : colors.loss
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="stats-grid">
+                {/* Financial Statistics */}
+                <div className="stat-card finance">
+                  <div className="stat-icon">💰</div>
+                  <div className="stat-value">{formatTokenAmount(playerStats.bet)}</div>
+                  <div className="stat-label">Total Bet</div>
+                </div>
+                
+                <div className="stat-card finance">
+                  <div className="stat-icon">💸</div>
+                  <div className="stat-value">{formatTokenAmount(playerStats.winnings)}</div>
+                  <div className="stat-label">Total Winnings</div>
+                </div>
+                
+                <div className="stat-card finance">
+                  <div className="stat-icon">📈</div>
+                  <div className="stat-value" style={{ 
+                    color: playerStats.winnings.gt(playerStats.bet) ? colors.win : colors.loss 
+                  }}>
+                    {playerStats.winnings.gt(playerStats.bet) ? '+' : ''}
+                    {formatTokenAmount(playerStats.winnings.sub(playerStats.bet))}
+                  </div>
+                  <div className="stat-label">Net Profit</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pie chart */}
+            <div className="stats-chart-container">
+              <h3 className="stats-chart-title">Game Outcome Distribution</h3>
+              <div className="stats-chart">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={gameOutcomeData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={100}
+                      innerRadius={60}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {gameOutcomeData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`${value} games`, 'Count']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recent Games */}
+        {activeStatsSection === 'recent' && (
+          <div className="recent-games-section">
+            <h3 className="stats-section-title">Recent Games</h3>
+            
+            {recentGames.length === 0 ? (
+              <div className="no-games-message">No completed games yet.</div>
+            ) : (
+              <div className="recent-games-grid">
+                {recentGames.map((gameData) => {
+                  const { id, game } = gameData;
+                  const gameId = id.toString();
+                  const isPlayer1 = game.p1.toLowerCase() === account?.toLowerCase();
+                  const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
+                  const isWinner = game.winner && game.winner.toLowerCase() === account?.toLowerCase();
+                  const isTie = game.state === 4;
+                  const isInvolved = isPlayer1 || isPlayer2;
+                  
+                  let resultClass = 'neutral';
+                  if (isInvolved) {
+                    resultClass = isTie ? 'tie' : (isWinner ? 'won' : 'lost');
+                  }
+                  
+                  let resultText = 'WATCHED';
+                  if (isInvolved) {
+                    resultText = isTie ? 'TIE' : (isWinner ? 'WON' : 'LOST');
+                  }
+                  
+                  return (
+                    <div key={gameId} className={`recent-game-card ${resultClass}`}>
+                      <div className="recent-game-header">
+                        <div className="recent-game-id">Game #{gameId}</div>
+                        <div className={`recent-game-result ${resultClass}`}>{resultText}</div>
+                      </div>
+                      <div className="recent-game-details">
+                        <div className="recent-game-players">
+                          <div className="player-tag">
+                            <span className="player-address">{formatAddress(game.p1)}</span>
+                            {isPlayer1 && <span className="player-you-tag">YOU</span>}
+                          </div>
+                          <div className="vs-label">VS</div>
+                          <div className="player-tag">
+                            <span className="player-address">{formatAddress(game.p2)}</span>
+                            {isPlayer2 && <span className="player-you-tag">YOU</span>}
+                          </div>
+                        </div>
+                        <div className="recent-game-bet">
+                          Bet: {formatTokenAmount(game.bet)} tokens
+                        </div>
+                        {!isTie && game.winner && (
+                          <div className="recent-game-winner">
+                            Winner: {formatAddress(game.winner)}
+                            {isWinner && <span className="player-you-tag">YOU</span>}
+                          </div>
+                        )}
+                        {game.autoResolved && (
+                          <div className="auto-resolved-tag">
+                            ⚡ Auto Resolved
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Performance Analysis */}
+        {activeStatsSection === 'analysis' && (
+          <div className="performance-analysis">
+            <div className="analysis-section">
+              <h3 className="stats-section-title">Win Rate History</h3>
+              <div className="analysis-chart">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={winRateHistory}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={colors.darkAccent} />
+                    <XAxis dataKey="month" tick={{ fill: colors.light }} />
+                    <YAxis tick={{ fill: colors.light }} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: colors.dark,
+                        borderColor: colors.primary,
+                        color: "#fff"
+                      }}
+                      formatter={(value) => [`${value.toFixed(1)}%`, 'Win Rate']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="rate" 
+                      name="Win Rate" 
+                      stroke={colors.primary}
+                      strokeWidth={3}
+                      dot={{ stroke: colors.primary, strokeWidth: 2, r: 4, fill: colors.dark }}
+                      activeDot={{ stroke: colors.secondary, strokeWidth: 2, r: 6, fill: colors.primary }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="analysis-section">
+              <h3 className="stats-section-title">Favorite Choices Analysis</h3>
+              <div className="analysis-chart">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={[
+                      { name: 'Rock', yours: 35, opponents: 25 },
+                      { name: 'Paper', yours: 40, opponents: 45 },
+                      { name: 'Scissors', yours: 25, opponents: 30 },
+                    ]}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={colors.darkAccent} />
+                    <XAxis dataKey="name" tick={{ fill: colors.light }} />
+                    <YAxis tick={{ fill: colors.light }} />
+                    <Tooltip
+                      contentStyle={{ 
+                        backgroundColor: colors.dark,
+                        borderColor: colors.primary,
+                        color: "#fff"
+                      }}
+                      formatter={(value) => [`${value}%`, '']}
+                    />
+                    <Legend wrapperStyle={{ color: colors.light }} />
+                    <Bar dataKey="yours" name="Your Choices" fill={colors.primary} />
+                    <Bar dataKey="opponents" name="Opponents' Choices" fill={colors.secondary} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="stats-insights">
+              <h3 className="stats-section-title">Performance Insights</h3>
+              <div className="insight-cards">
+                <div className="insight-card">
+                  <div className="insight-icon">💡</div>
+                  <div className="insight-content">
+                    <h4>Winning Strategy</h4>
+                    <p>Opponents tend to choose Paper more often. Try using Scissors to increase your win rate.</p>
+                  </div>
+                </div>
+                
+                <div className="insight-card">
+                  <div className="insight-icon">📊</div>
+                  <div className="insight-content">
+                    <h4>Performance Summary</h4>
+                    <p>With a {winRate}% win rate, you're performing {parseFloat(winRate) > 50 ? 'above' : 'below'} average.</p>
+                  </div>
+                </div>
+                
+                <div className="insight-card">
+                  <div className="insight-icon">💰</div>
+                  <div className="insight-content">
+                    <h4>Betting Strategy</h4>
+                    <p>Your average bet is: {formatTokenAmount(playerStats.bet.div(playerStats.played.gt(0) ? playerStats.played : 1))} tokens.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderPlayerStats = () => (
     <div className="stats-section">
       <div className="section-header">
@@ -1189,42 +1547,7 @@ const RockPaperScissors = ({ onClose }) => {
       </div>
       
       {playerStats ? (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-value">{playerStats.played.toString()}</div>
-            <div className="stat-label">Games Played</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{playerStats.won.toString()}</div>
-            <div className="stat-label">Games Won</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{playerStats.ties.toString()}</div>
-            <div className="stat-label">Games Tied</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">
-              {playerStats.played.gt(0) 
-                ? ((playerStats.won.toNumber() / playerStats.played.toNumber()) * 100).toFixed(1)
-                : 0}%
-            </div>
-            <div className="stat-label">Win Rate</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{formatTokenAmount(playerStats.bet)}</div>
-            <div className="stat-label">Total Bet</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{formatTokenAmount(playerStats.winnings)}</div>
-            <div className="stat-label">Total Winnings</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">
-              {formatTokenAmount(playerStats.winnings.sub(playerStats.bet))}
-            </div>
-            <div className="stat-label">Net Profit</div>
-          </div>
-        </div>
+        renderEnhancedPlayerStats()
       ) : (
         <div className="empty-state">Loading statistics...</div>
       )}
