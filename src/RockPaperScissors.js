@@ -141,7 +141,7 @@ const RockPaperScissors = ({ onClose }) => {
     opponents: [30, 45, 25] // Rock, Paper, Scissors percentages
   };
 
-  // Generate win rate history data with consistent values
+  // Generate win rate history data with consistent values - MODIFIED to remove date information
   useEffect(() => {
     if (playerStats && finishedGames && finishedGames.length > 0) {
       // Only generate the data once when stats are first loaded or when account changes
@@ -153,24 +153,19 @@ const RockPaperScissors = ({ onClose }) => {
         
         // Generate historical data with variations based on the player's current win rate
         const historyData = Array.from({ length: 12 }, (_, i) => {
-          const month = new Date();
-          month.setMonth(month.getMonth() - 11 + i);
-          const monthName = month.toLocaleString('en-US', { month: 'short' });
-          
           // Use player ID (account address) as a seed for the variation
           const seed = account ? parseInt(account.slice(-8), 16) : 0;
           
-          // Create a deterministic variation using the month index and account
-          // This ensures values are unique but stable for each account and month
+          // Create a deterministic variation using the index and account
           const hash = (seed + i * 7919) % 21 - 10; // Range of -10 to +10
           
-          // For the latest month, use the exact current win rate
+          // For the latest data point, use the exact current win rate
           const rate = (i === 11) 
             ? currentWinRate 
             : Math.max(0, Math.min(100, currentWinRate + hash));
           
           return {
-            month: monthName,
+            index: i + 1, // Sequential index instead of month
             rate: parseFloat(rate.toFixed(1))
           };
         });
@@ -1493,7 +1488,7 @@ const RockPaperScissors = ({ onClose }) => {
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={winRateHistory}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.darkAccent} />
-                    <XAxis dataKey="month" tick={{ fill: colors.light }} />
+                    <XAxis dataKey="index" tick={false} />
                     <YAxis tick={{ fill: colors.light }} />
                     <Tooltip 
                       contentStyle={{ 
@@ -1502,6 +1497,7 @@ const RockPaperScissors = ({ onClose }) => {
                         color: "#fff"
                       }}
                       formatter={(value) => [`${value.toFixed(1)}%`, 'Win Rate']}
+                      labelFormatter={() => 'Win Rate'} 
                     />
                     <Line 
                       type="monotone" 
