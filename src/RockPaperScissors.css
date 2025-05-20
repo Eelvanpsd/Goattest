@@ -721,6 +721,15 @@
 
 .choice-icon {
   font-size: 2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.choice-icon img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
 }
 
 .choice-name {
@@ -885,8 +894,8 @@
 }
 
 .result.won {
-  background: #FF6B35;
-  color: #000000;
+  background: #27ae60;
+  color: white;
 }
 
 .result.lost {
@@ -1027,7 +1036,7 @@
 }
 
 .result-header.won {
-  color: #FF6B35;
+  color: #27ae60;
 }
 
 .result-header.lost {
@@ -1197,12 +1206,12 @@
 }
 
 .profit-highlight {
-  color: #FF6B35 !important;
+  color: #27ae60 !important;
   font-size: 1.1em;
-  background: rgba(255, 107, 53, 0.1);
+  background: rgba(39, 174, 96, 0.1);
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid #FF6B35;
+  border: 1px solid #27ae60;
 }
 
 .loss-highlight {
@@ -1233,7 +1242,7 @@
 /* Enhanced result icons with better animations */
 .result-header.won .result-icon {
   animation: bounceWin 0.8s ease-in-out;
-  color: #FF6B35;
+  color: #27ae60;
 }
 
 .result-header.lost .result-icon {
@@ -1445,6 +1454,11 @@
 
   .choice-icon {
     font-size: 1.5em;
+  }
+
+  .choice-icon img {
+    width: 40px;
+    height: 40px;
   }
 
   .section-header {

@@ -83,9 +83,9 @@ const GAME_STATES = {
 
 // Choices
 const CHOICES = {
-  0: { name: 'Rock', emoji: '🪨', icon: '✊' },
-  1: { name: 'Paper', emoji: '📄', icon: '✋' },
-  2: { name: 'Scissors', emoji: '✂️', icon: '✌️' },
+  0: { name: 'Rock', emoji: './rock.png', icon: './rock.png' },
+  1: { name: 'Paper', emoji: './paper.png', icon: './paper.png' },
+  2: { name: 'Scissors', emoji: './scissors.png', icon: './scissors.png' },
   3: { name: 'None', emoji: '❓', icon: '❓' }
 };
 
@@ -806,13 +806,15 @@ const RockPaperScissors = ({ onClose }) => {
                   <div className="choice-row">
                     <span><strong>Your choice:</strong></span>
                     <span className="choice-display">
-                      {CHOICES[playerChoice]?.icon} {CHOICES[playerChoice]?.name}
+                      <img src={CHOICES[playerChoice]?.icon} alt={CHOICES[playerChoice]?.name} style={{ width: '24px', height: '24px', marginRight: '8px' }} />
+                      {CHOICES[playerChoice]?.name}
                     </span>
                   </div>
                   <div className="choice-row">
                     <span><strong>Opponent's choice:</strong></span>
                     <span className="choice-display">
-                      {CHOICES[opponentChoice]?.icon} {CHOICES[opponentChoice]?.name}
+                      <img src={CHOICES[opponentChoice]?.icon} alt={CHOICES[opponentChoice]?.name} style={{ width: '24px', height: '24px', marginRight: '8px' }} />
+                      {CHOICES[opponentChoice]?.name}
                     </span>
                   </div>
                 </div>
@@ -875,7 +877,9 @@ const RockPaperScissors = ({ onClose }) => {
           disabled={disabled || loading}
           style={{ touchAction: 'manipulation' }}
         >
-          <span className="choice-icon">{CHOICES[choice].icon}</span>
+          <span className="choice-icon">
+            <img src={CHOICES[choice].icon} alt={CHOICES[choice].name} style={{ width: '60px', height: '60px' }} />
+          </span>
           <span className="choice-name">{CHOICES[choice].name}</span>
         </button>
       ))}
@@ -1069,7 +1073,7 @@ const RockPaperScissors = ({ onClose }) => {
           {renderChoiceSelector(setSelectedChoice)}
           {selectedChoice !== null && (
             <div className="selection-feedback">
-              Selected: {CHOICES[selectedChoice].name} {CHOICES[selectedChoice].icon}
+              Selected: {CHOICES[selectedChoice].name} <img src={CHOICES[selectedChoice].icon} alt={CHOICES[selectedChoice].name} style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
             </div>
           )}
         </div>
