@@ -1487,9 +1487,9 @@ const RockPaperScissors = ({ onClose }) => {
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
                     data={[
-                      { name: 'Rock', yours: 35, opponents: 25 },
-                      { name: 'Paper', yours: 40, opponents: 45 },
-                      { name: 'Scissors', yours: 25, opponents: 30 },
+                      { name: 'Rock', yours: choiceStats.yours[0] || 0, opponents: choiceStats.opponents[0] || 0 },
+                      { name: 'Paper', yours: choiceStats.yours[1] || 0, opponents: choiceStats.opponents[1] || 0 },
+                      { name: 'Scissors', yours: choiceStats.yours[2] || 0, opponents: choiceStats.opponents[2] || 0 },
                     ]}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.darkAccent} />
@@ -1518,7 +1518,15 @@ const RockPaperScissors = ({ onClose }) => {
                   <div className="insight-icon">💡</div>
                   <div className="insight-content">
                     <h4>Winning Strategy</h4>
-                    <p>Opponents tend to choose Paper more often. Try using Scissors to increase your win rate.</p>
+                    <p>
+                      {choiceStats.opponents[1] > choiceStats.opponents[0] && choiceStats.opponents[1] > choiceStats.opponents[2] ? 
+                      "Opponents tend to choose Paper more often. Try using Scissors to increase your win rate." :
+                      choiceStats.opponents[2] > choiceStats.opponents[0] && choiceStats.opponents[2] > choiceStats.opponents[1] ?
+                      "Opponents prefer Scissors. Rock would be a good counter-strategy." :
+                      choiceStats.opponents[0] > choiceStats.opponents[1] && choiceStats.opponents[0] > choiceStats.opponents[2] ?
+                      "Opponents favor Rock. Paper would give you an advantage." :
+                      "Your opponents have no clear preference. Mix up your strategy to stay unpredictable."}
+                    </p>
                   </div>
                 </div>
                 
@@ -1534,7 +1542,16 @@ const RockPaperScissors = ({ onClose }) => {
                   <div className="insight-icon">💰</div>
                   <div className="insight-content">
                     <h4>Betting Strategy</h4>
-                    <p>Your average bet is: {formatTokenAmount(playerStats.bet.div(playerStats.played.gt(0) ? playerStats.played : 1))} tokens.</p>
+                    <p>
+                      {playerStats.played.gt(0) ? (
+                        `Your average bet is: ${formatTokenAmount(playerStats.bet.div(playerStats.played))} tokens.
+                        ${playerStats.winnings.gt(playerStats.bet) ? 
+                          "Your strategy is profitable!" : 
+                          "Consider adjusting your strategy to improve profits."}`
+                      ) : (
+                        "Play more games to see betting insights."
+                      )}
+                    </p>
                   </div>
                 </div>
               </div>
