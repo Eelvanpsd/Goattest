@@ -131,25 +131,61 @@ const RockPaperScissors = ({ onClose }) => {
   // Refs for cleanup
   const eventListenersRef = useRef(new Map());
   const intervalsRef = useRef(new Map());
+  
+  // Add this ref to store the win rate history data persistently
+  const winRateHistoryRef = useRef(null);
+  
+  // Mock data for choice statistics (replace with actual data in production)
+  const choiceStats = {
+    yours: [35, 40, 25], // Rock, Paper, Scissors percentages
+    opponents: [30, 45, 25] // Rock, Paper, Scissors percentages
+  };
 
-  // Generate win rate history data - for enhanced statistics
+  // Generate win rate history data with consistent values
   useEffect(() => {
     if (playerStats && finishedGames && finishedGames.length > 0) {
-      // Generate sample data - replace with actual API data in production
-      const mockWinRateHistory = Array.from({ length: 12 }, (_, i) => {
-        const month = new Date();
-        month.setMonth(month.getMonth() - 11 + i);
-        const monthName = month.toLocaleString('en-US', { month: 'short' });
+      // Only generate the data once when stats are first loaded or when account changes
+      if (!winRateHistoryRef.current || winRateHistoryRef.current.accountId !== account) {
+        // Create deterministic win rate history based on player stats and account
+        const currentWinRate = playerStats.played.gt(0) 
+          ? (playerStats.won.toNumber() / playerStats.played.toNumber()) * 100
+          : 50; // Default to 50% if no games played
         
-        return {
-          month: monthName,
-          rate: Math.random() * 100
+        // Generate historical data with variations based on the player's current win rate
+        const historyData = Array.from({ length: 12 }, (_, i) => {
+          const month = new Date();
+          month.setMonth(month.getMonth() - 11 + i);
+          const monthName = month.toLocaleString('en-US', { month: 'short' });
+          
+          // Use player ID (account address) as a seed for the variation
+          const seed = account ? parseInt(account.slice(-8), 16) : 0;
+          
+          // Create a deterministic variation using the month index and account
+          // This ensures values are unique but stable for each account and month
+          const hash = (seed + i * 7919) % 21 - 10; // Range of -10 to +10
+          
+          // For the latest month, use the exact current win rate
+          const rate = (i === 11) 
+            ? currentWinRate 
+            : Math.max(0, Math.min(100, currentWinRate + hash));
+          
+          return {
+            month: monthName,
+            rate: parseFloat(rate.toFixed(1))
+          };
+        });
+        
+        // Store the generated data in the ref with the account ID
+        winRateHistoryRef.current = {
+          data: historyData,
+          accountId: account
         };
-      });
+      }
       
-      setWinRateHistory(mockWinRateHistory);
+      // Set the state from the ref
+      setWinRateHistory(winRateHistoryRef.current.data);
     }
-  }, [playerStats, finishedGames]);
+  }, [playerStats, finishedGames, account]);
 
   // Check if device is mobile
   useEffect(() => {
