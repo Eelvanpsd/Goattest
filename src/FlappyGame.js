@@ -144,9 +144,20 @@ const FlappyGame = ({ onClose }) => {
       
       // Arka plan resmi
       if (backgroundImage.complete) {
+        // Math.floor kullanarak piksel-perfect pozisyonlama yapalım
         bgPos = (bgPos - bgSpeedRef.current * deltaTime) % backgroundImage.width;
-        ctx.drawImage(backgroundImage, bgPos, 0, canvas.width, canvas.height);
-        ctx.drawImage(backgroundImage, bgPos + canvas.width, 0, canvas.width, canvas.height);
+        
+        // Yeni konum hesaplama - negatif olmasını engelleyelim
+        const bgOffset = Math.floor(bgPos % backgroundImage.width);
+        const bgX = bgOffset < 0 ? bgOffset + backgroundImage.width : bgOffset;
+        
+        // İki arka plan resmi çiz, ama üst üste gelecek şekilde (boşluk olmaması için)
+        // İlk resim
+        ctx.drawImage(backgroundImage, bgX, 0, canvas.width + 1, canvas.height);
+        // İkinci resim (yanına)
+        ctx.drawImage(backgroundImage, bgX - backgroundImage.width, 0, canvas.width + 1, canvas.height);
+        // Üçüncü resim (olası tüm boşlukları kapatmak için)
+        ctx.drawImage(backgroundImage, bgX + backgroundImage.width, 0, canvas.width + 1, canvas.height);
       } else {
         ctx.fillStyle = '#70c5ce';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -233,11 +244,20 @@ const FlappyGame = ({ onClose }) => {
       
       ctx.restore();
       
-      // Zemini çiz
+      // Zemini çiz - boşluk sorunu düzeltmesi
       if (groundImage.complete) {
+        // Math.floor kullanarak piksel-perfect pozisyonlama yapalım
         groundPos = (groundPos - groundSpeedRef.current * deltaTime) % groundImage.width;
-        ctx.drawImage(groundImage, groundPos, canvas.height - groundHeight, canvas.width, groundHeight);
-        ctx.drawImage(groundImage, groundPos + canvas.width, canvas.height - groundHeight, canvas.width, groundHeight);
+        
+        // Yeni konum hesaplama - negatif olmasını engelleyelim
+        const groundOffset = Math.floor(groundPos % groundImage.width);
+        const groundX = groundOffset < 0 ? groundOffset + groundImage.width : groundOffset;
+        
+        // 3 zemin resmi çizerek tüm boşlukları kapatıyoruz
+        // 1 piksel fazla genişlik ekleyerek boşlukları kapatıyoruz
+        ctx.drawImage(groundImage, groundX, canvas.height - groundHeight, canvas.width + 1, groundHeight);
+        ctx.drawImage(groundImage, groundX - groundImage.width, canvas.height - groundHeight, canvas.width + 1, groundHeight);
+        ctx.drawImage(groundImage, groundX + groundImage.width, canvas.height - groundHeight, canvas.width + 1, groundHeight);
       } else {
         ctx.fillStyle = '#dec587';
         ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
