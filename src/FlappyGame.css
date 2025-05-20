@@ -238,3 +238,90 @@
     font-size: 14px;
   }
 }
+
+/* FlappyGame.css dosyasına eklenecek yükleme ekranı stilleri */
+
+/* Yükleme ekranı ve spinner */
+.flappy-loading {
+  width: 95%;
+  max-width: 800px;
+  height: 70vh;
+  max-height: 600px;
+  background-color: #70c5ce;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.flappy-loading-text {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.3);
+}
+
+.flappy-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Canvas ayarları - render performansını artırmak için */
+.flappy-canvas {
+  width: 95%;
+  max-width: 800px;
+  height: 70vh;
+  max-height: 600px;
+  background-color: #70c5ce;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  touch-action: none; /* Önemli: mobil için dokunma olaylarının düzgün çalışması */
+  will-change: transform; /* GPU hızlandırması */
+  transform: translateZ(0); /* GPU hızlandırması için */
+  backface-visibility: hidden; /* Render performansı artırımı */
+  perspective: 1000; /* 3D dönüşüm performansı artırımı */
+}
+
+/* Mobil uyumluluk için */
+@media (max-width: 768px) {
+  .flappy-loading {
+    height: 60vh;
+  }
+  
+  .flappy-loading-text {
+    font-size: 20px;
+  }
+  
+  .flappy-spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .flappy-loading {
+    height: 50vh;
+  }
+  
+  .flappy-loading-text {
+    font-size: 18px;
+  }
+  
+  .flappy-spinner {
+    width: 36px;
+    height: 36px;
+    border-width: 3px;
+  }
+}
