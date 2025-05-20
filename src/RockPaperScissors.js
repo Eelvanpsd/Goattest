@@ -8,7 +8,7 @@ import losePng from './assets/lose.png';
 import tiePng from './assets/tie.png';
 
 // UPDATED CONTRACT ADDRESS - Your deployed contract
-const CONTRACT_ADDRESS = '0x1f45C08E00A8469c87431Aa1b63Fb64FDC295Fb6';
+const CONTRACT_ADDRESS = '0xC46871Ee29456a1A2aE582D6352a37d29BE3Bc74';
 const TOKEN_ADDRESS = '0xB9C188BC558a82a1eE9E75AE0857df443F407632';
 
 // Backend service URL (bot service endpoint)
@@ -187,7 +187,7 @@ const RockPaperScissors = ({ onClose }) => {
             const publicRefreshInterval = setInterval(async () => {
               try {
                 if (!account) {
-                  await loadPublicData();
+                  await loadPublicData(false); // false = no loading animation
                 }
               } catch (error) {
                 console.error('Public periodic refresh failed:', error);
@@ -230,9 +230,11 @@ const RockPaperScissors = ({ onClose }) => {
   }, []);
 
   // Load public data (all active games) even without wallet connection
-  const loadPublicData = async () => {
+  const loadPublicData = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       
       const publicProvider = new ethers.providers.JsonRpcProvider(AVALANCHE_NETWORK.rpcUrls[0]);
       const publicContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, publicProvider);
@@ -269,7 +271,9 @@ const RockPaperScissors = ({ onClose }) => {
     } catch (error) {
       console.error('Failed to load public data:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -363,7 +367,7 @@ const RockPaperScissors = ({ onClose }) => {
       await checkNetwork();
       
       if (networkCorrect) {
-        await loadGameData(gameContract, tokenContract, account);
+        await loadGameData(gameContract, tokenContract, account, false); // false = no loading animation
         setupEventListeners(gameContract);
       }
       
@@ -378,12 +382,12 @@ const RockPaperScissors = ({ onClose }) => {
   // Load game data when network is correct
   useEffect(() => {
     if (contract && tokenContract && account && networkCorrect) {
-      loadGameData(contract, tokenContract, account);
+      loadGameData(contract, tokenContract, account, false); // false = no loading animation
       setupEventListeners(contract);
       
       const refreshInterval = setInterval(async () => {
         try {
-          await loadGameData(contract, tokenContract, account);
+          await loadGameData(contract, tokenContract, account, false); // false = no loading animation
         } catch (error) {
           console.error('Periodic refresh failed:', error);
         }
@@ -413,9 +417,9 @@ const RockPaperScissors = ({ onClose }) => {
       setTimeout(async () => {
         try {
           if (account && contract && tokenContract) {
-            await loadGameData(contract, tokenContract, account);
+            await loadGameData(contract, tokenContract, account, false); // false = no loading animation
           } else {
-            await loadPublicData();
+            await loadPublicData(false); // false = no loading animation
           }
         } catch (error) {
           console.error('Auto refresh failed:', error);
@@ -514,9 +518,11 @@ const RockPaperScissors = ({ onClose }) => {
   };
 
   // Load game data
-  const loadGameData = async (gameContract, tokenContract, userAccount) => {
+  const loadGameData = async (gameContract, tokenContract, userAccount, showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       
       const activeIds = await gameContract.getActive();
       const activeGamesData = await Promise.all(
@@ -570,7 +576,9 @@ const RockPaperScissors = ({ onClose }) => {
       console.error('Failed to load game data:', error);
       setError('Failed to load game data');
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -670,7 +678,7 @@ const RockPaperScissors = ({ onClose }) => {
       setBetAmount('');
       setCurrentView('games');
       
-      await loadGameData(contract, tokenContract, account);
+      await loadGameData(contract, tokenContract, account, false); // false = no loading animation
       
     } catch (error) {
       console.error('Failed to create game:', error);
@@ -709,7 +717,7 @@ const RockPaperScissors = ({ onClose }) => {
       const tx = await contract.joinGame(gameId, choice);
       await tx.wait();
       
-      await loadGameData(contract, tokenContract, account);
+      await loadGameData(contract, tokenContract, account, false); // false = no loading animation
       
     } catch (error) {
       console.error('Failed to join game:', error);
@@ -737,7 +745,7 @@ const RockPaperScissors = ({ onClose }) => {
         return newMap;
       });
       
-      await loadGameData(contract, tokenContract, account);
+      await loadGameData(contract, tokenContract, account, false); // false = no loading animation
       
     } catch (error) {
       console.error('Failed to cancel game:', error);
@@ -990,36 +998,34 @@ const RockPaperScissors = ({ onClose }) => {
           <button 
             className="refresh-btn"
             onClick={async () => {
-              setLoading(true);
+              setLoading(true); // Manuel refresh - loading gösterir
               try {
                 if (account && contract && tokenContract) {
-                  await loadGameData(contract, tokenContract, account);
+                  await loadGameData(contract, tokenContract, account, true); // true = loading animation
                 } else {
-                  await loadPublicData();
+                  await loadPublicData(true); // true = loading animation
                 }
               } catch (error) {
                 console.error('Refresh failed:', error);
                 setError('Failed to refresh games');
-              } finally {
-                setLoading(false);
               }
+              // Loading'i burada kapatmıyoruz, loadGameData/loadPublicData içinde kapanacak
             }}
             onTouchEnd={async (e) => {
               e.preventDefault();
               if (!loading) {
-                setLoading(true);
+                setLoading(true); // Manuel refresh - loading gösterir
                 try {
                   if (account && contract && tokenContract) {
-                    await loadGameData(contract, tokenContract, account);
+                    await loadGameData(contract, tokenContract, account, true); // true = loading animation
                   } else {
-                    await loadPublicData();
+                    await loadPublicData(true); // true = loading animation
                   }
                 } catch (error) {
                   console.error('Refresh failed:', error);
                   setError('Failed to refresh games');
-                } finally {
-                  setLoading(false);
                 }
+                // Loading'i burada kapatmıyoruz, loadGameData/loadPublicData içinde kapanacak
               }
             }}
             disabled={loading}

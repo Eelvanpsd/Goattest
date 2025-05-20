@@ -993,7 +993,6 @@
   align-items: center;
   z-index: 2000;
   animation: fadeIn 0.3s ease-in-out;
-  /* Mobile scroll capability */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 20px 0;
@@ -1011,12 +1010,9 @@
   text-align: center;
   animation: popupSlideIn 0.4s ease-out;
   border: 1px solid #333333;
-  /* Prevent popup from being too tall on mobile */
   max-height: 90vh;
   overflow-y: auto;
-  /* Ensure popup stays in view */
   margin: auto;
-  /* Prevent MetaMask overlay interference */
   position: relative;
 }
 
@@ -1114,7 +1110,6 @@
   color: #FF6B35;
 }
 
-/* Better styling for the close button in popup */
 .close-popup-btn {
   background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
   border: none;
@@ -1174,8 +1169,6 @@
     inset 0 -1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* Updated CSS for game result popup enhancements */
-
 .choices-display {
   background: #1a1a1a;
   border-radius: 10px;
@@ -1223,7 +1216,6 @@
   border: 1px solid #ff4757;
 }
 
-/* Enhanced result popup animations */
 .game-result-popup {
   animation: popupEnhancedSlideIn 0.5s ease-out;
 }
@@ -1239,7 +1231,6 @@
   }
 }
 
-/* Enhanced result icons with better animations */
 .result-header.won .result-icon {
   animation: bounceWin 0.8s ease-in-out;
   color: #27ae60;
@@ -1409,7 +1400,7 @@
   }
 }
 
-/* Mobile-specific fixes for MetaMask browser */
+/* Mobile-specific fixes */
 @media (max-width: 768px) {
   .rps-game-content {
     width: 100%;
@@ -1506,9 +1497,7 @@
 
   /* Mobile-specific popup adjustments */
   .game-result-popup-overlay {
-    /* Use flex-start instead of center to prevent centering issues */
     align-items: flex-start;
-    /* Add safe area insets for devices with notches */
     padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 10px) 
              env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 10px);
     padding-top: max(env(safe-area-inset-top, 20px), 60px);
@@ -1519,14 +1508,11 @@
     padding: 25px 20px;
     margin-top: 40px;
     margin-bottom: 40px;
-    /* Reduce max-height to prevent overlap with MetaMask overlay */
     max-height: calc(100vh - 160px);
     width: 95%;
     max-width: 400px;
     border-radius: 15px;
-    /* Ensure content is scrollable if needed */
     overflow-y: auto;
-    /* Prevent text selection issues on mobile */
     -webkit-user-select: none;
     user-select: none;
   }
@@ -1576,13 +1562,11 @@
     font-size: 1em;
     margin-top: 15px;
     border-radius: 20px;
-    /* Ensure button is always accessible */
     position: sticky;
     bottom: 0;
     background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
   }
 
-  /* Additional mobile safety for very small screens */
   @media (max-height: 600px) {
     .game-result-popup {
       margin-top: 20px;
@@ -1650,7 +1634,6 @@
     font-size: 1.5em;
   }
 
-  /* Ultra-small screen popup adjustments */
   .game-result-popup {
     padding: 20px 15px;
     margin-top: 20px;
@@ -1676,28 +1659,22 @@
 /* Special fixes for MetaMask mobile browser */
 @media screen and (max-width: 768px) and (orientation: portrait) {
   .game-result-popup-overlay {
-    /* Force scroll behavior on mobile */
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    /* Position overlay to account for MetaMask UI */
     padding-top: max(env(safe-area-inset-top), 80px);
     padding-bottom: max(env(safe-area-inset-bottom), 100px);
   }
 
   .game-result-popup {
-    /* Ensure popup doesn't get stuck behind MetaMask overlay */
     position: relative;
     z-index: 2001;
-    /* Make it more compact */
     min-height: auto;
     max-height: calc(100vh - 180px);
-    /* Add visual indicator that content is scrollable */
     box-shadow: 
       0 20px 60px rgba(0, 0, 0, 0.8),
       inset 0 -20px 20px -20px rgba(255, 107, 53, 0.1);
   }
 
-  /* Make close button more prominent and accessible */
   .close-popup-btn {
     background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%) !important;
     box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4) !important;
@@ -1708,18 +1685,15 @@
     margin-top: 25px !important;
     width: 100% !important;
     max-width: 250px !important;
-    /* Ensure it's always visible */
     position: sticky;
     bottom: 10px;
     z-index: 2002;
   }
 
-  /* Add touch-friendly spacing */
   .result-details {
     margin-bottom: 30px;
   }
 
-  /* Improve text readability on small screens */
   .game-info p {
     line-height: 1.4;
     margin: 10px 0;
@@ -1735,7 +1709,7 @@
   }
 }
 
-/* Landscape mode adjustments for mobile */
+/* Landscape mode adjustments */
 @media screen and (max-width: 768px) and (orientation: landscape) {
   .game-result-popup-overlay {
     padding: 20px 10px;
