@@ -1386,11 +1386,16 @@ const RockPaperScissors = ({ onClose }) => {
                 {recentGames.map((gameData) => {
                   const { id, game } = gameData;
                   const gameId = id.toString();
+                  // Filter for user's own games only
                   const isPlayer1 = game.p1.toLowerCase() === account?.toLowerCase();
                   const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
+                  const isInvolved = isPlayer1 || isPlayer2;
+                  
+                  // Only show games where the user was involved
+                  if (!isInvolved) return null;
+                  
                   const isWinner = game.winner && game.winner.toLowerCase() === account?.toLowerCase();
                   const isTie = game.state === 4;
-                  const isInvolved = isPlayer1 || isPlayer2;
                   
                   let resultClass = 'neutral';
                   if (isInvolved) {
@@ -1593,6 +1598,22 @@ const RockPaperScissors = ({ onClose }) => {
                 {!networkCorrect && (
                   <span className="network-warning-badge">Wrong Network</span>
                 )}
+                <button 
+                  className="disconnect-wallet-btn"
+                  onClick={() => {
+                    setAccount(null);
+                    setSigner(null);
+                    setProvider(null);
+                    setContract(null);
+                    setTokenContract(null);
+                    setPlayerStats(null);
+                    setCurrentView('games');
+                    setNetworkCorrect(false);
+                    loadPublicData(true);
+                  }}
+                >
+                  Disconnect
+                </button>
               </div>
             )}
             <button 
@@ -1614,25 +1635,24 @@ const RockPaperScissors = ({ onClose }) => {
         ) : (
           <>
             <div className="rps-nav">
-              {['games', 'create', 'history', 'stats'].map((view) => (
+              {['games', 'create', 'stats'].map((view) => (
                 <button 
                   key={view}
                   className={`nav-btn ${currentView === view ? 'active' : ''}`}
                   onClick={() => setCurrentView(view)}
                   onTouchEnd={(e) => {
                     e.preventDefault();
-                    if (view === 'create' || view === 'history' || view === 'stats') {
+                    if (view === 'create' || view === 'stats') {
                       if (account) setCurrentView(view);
                     } else {
                       setCurrentView(view);
                     }
                   }}
-                  disabled={!account && (view === 'create' || view === 'history' || view === 'stats')}
+                  disabled={!account && (view === 'create' || view === 'stats')}
                   style={{ touchAction: 'manipulation' }}
                 >
                   {view === 'games' && 'Active Games'}
                   {view === 'create' && 'Create Game'}
-                  {view === 'history' && 'History'}
                   {view === 'stats' && 'Statistics'}
                 </button>
               ))}
@@ -1657,7 +1677,6 @@ const RockPaperScissors = ({ onClose }) => {
               
               {currentView === 'games' && renderActiveGames()}
               {currentView === 'create' && account && renderCreateGame()}
-              {currentView === 'history' && account && renderGameHistory()}
               {currentView === 'stats' && account && renderPlayerStats()}
               
               {!account && currentView !== 'games' && (
