@@ -28,10 +28,10 @@
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-  position: relative; /* RPS overlay için gerekli */
+  position: relative; /* Required for RPS overlay */
 }
 
-/* RPS Button - Resmin fiziksel üstünde (overlay değil) - YENİ KONUM */
+/* RPS Button - Physically above the image (not overlay) - NEW POSITION */
 .rps-button-top {
   margin-bottom: 15px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -59,7 +59,7 @@
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
-/* FlappyGame Button - Geri eklenen CSS */
+/* FlappyGame Button - Re-added CSS */
 .play-button {
   margin-top: 16px;
   font-size: 24px;
@@ -149,7 +149,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* RPS Overlay Button - Resmin üstünde */
+/* RPS Overlay Button - On top of the image */
 .rps-overlay {
   position: absolute;
   top: 20px;
@@ -185,7 +185,7 @@
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
-/* RPS Overlay Button - Resmin üstünde */
+/* RPS Overlay Button - On top of the image */
 .rps-overlay {
   position: absolute;
   top: 20px;
@@ -221,7 +221,7 @@
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
-/* Flappy Button - Sadece 3. character'de */
+/* Flappy Button - Only for 3rd character */
 .flappy-button {
   margin-top: 16px;
   font-size: 18px;
@@ -468,7 +468,7 @@
   }
 }
 
-/* Mobil responsiveness */
+/* Mobile responsiveness */
 @media (max-width: 768px) {
   .character-container {
     width: 95%;
@@ -525,7 +525,7 @@
   }
 }
 
-/* Çok küçük ekranlar için ek boyut düzenlemeleri */
+/* Additional size adjustments for very small screens */
 @media (max-width: 480px) {
   .character-container {
     width: 90%;
