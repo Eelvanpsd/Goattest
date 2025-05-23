@@ -1621,7 +1621,7 @@ const RockPaperScissors = ({ onClose }) => {
     </div>
   );
 
-  // Main render
+  // MainRender
   return (
     <div className="rps-game-modal">
       <div className="rps-game-content">
