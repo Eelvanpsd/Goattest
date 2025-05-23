@@ -11,7 +11,7 @@ const FlappyGame = ({ onClose }) => {
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   
-  // Referanslar
+  // References
   const lastTimeRef = useRef(0);
   const pipeSpeedRef = useRef(150);
   const groundSpeedRef = useRef(150);
@@ -27,9 +27,9 @@ const FlappyGame = ({ onClose }) => {
   });
   const imageLoadCountRef = useRef(0);
   
-  // Resimlerin önceden yüklenmesi için
+  // For preloading images
   useEffect(() => {
-    const totalImages = 5; // Toplam yüklenecek resim sayısı
+    const totalImages = 5; // Total number of images to load
     const imageSources = {
       bird: process.env.PUBLIC_URL + '/Flappy.png',
       pipeTop: process.env.PUBLIC_URL + '/pipe-top.png',
@@ -38,41 +38,41 @@ const FlappyGame = ({ onClose }) => {
       ground: process.env.PUBLIC_URL + '/ground.png'
     };
     
-    // Her resim için yükleme işlemi
+    // Loading process for each image
     Object.entries(imageSources).forEach(([key, src]) => {
       const img = new Image();
       
-      // Yükleme olayları
+      // Loading events
       img.onload = () => {
         imagesRef.current[key] = img;
         imageLoadCountRef.current += 1;
         
-        // İlerleme yüzdesini hesapla
+        // Calculate progress percentage
         const progress = Math.floor((imageLoadCountRef.current / totalImages) * 100);
         setLoadingProgress(progress);
         
-        // Tüm resimler yüklendiyse oyunu başlat
+        // Start the game if all images are loaded
         if (imageLoadCountRef.current === totalImages) {
           setAssetsLoaded(true);
         }
       };
       
-      // Hata durumunda
+      // In case of error
       img.onerror = () => {
         console.error(`Failed to load image: ${src}`);
         imageLoadCountRef.current += 1;
         
-        // Bir resim yüklenemese bile devam et
+        // Continue even if one image fails to load
         if (imageLoadCountRef.current === totalImages) {
           setAssetsLoaded(true);
         }
       };
       
-      // Resimlerin yüklenmeye başlaması
+      // Start loading images
       img.src = src;
     });
     
-    // Mobil cihaz tespiti
+    // Mobile device detection
     const checkMobile = () => {
       const mobileCheck = window.innerWidth <= 768;
       setIsMobile(mobileCheck);
@@ -86,9 +86,9 @@ const FlappyGame = ({ onClose }) => {
     };
   }, []);
 
-  // Oyun başlatma - artık assetler yüklendikten sonra oyun başlayacak
+  // Game initialization - now the game will start after assets are loaded
   useEffect(() => {
-    // Assetler yüklenmemişse bekliyoruz
+    // Wait if assets are not loaded
     if (!assetsLoaded || !canvasRef.current) return;
     
     const canvas = canvasRef.current;
@@ -97,7 +97,7 @@ const FlappyGame = ({ onClose }) => {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
     
-    // Oyun değişkenleri
+    // Game variables
     let bird = {
       x: canvas.width / 4,
       y: canvas.height / 2,
@@ -116,28 +116,28 @@ const FlappyGame = ({ onClose }) => {
     const pipeGap = isMobile ? 180 : 170;
     const groundHeight = 80;
     
-    // Arka plan pozisyonları
+    // Background positions
     let bgPos = 0;
     let groundPos = 0;
     
-    // Resimler önceden yüklendiği için artık hazır
+    // Images are now ready since they were preloaded
     const { bird: birdImage, pipeTop: pipeTopImage, pipeBottom: pipeBottomImage, 
             background: backgroundImage, ground: groundImage } = imagesRef.current;
     
-    // Skor güncelleme
+    // Score update
     const updateScore = () => {
       localScore++;
       setScore(localScore);
       setHighScore(prevHighScore => Math.max(prevHighScore, localScore));
     };
     
-    // Jump fonksiyonu
+    // Jump function
     const jump = () => {
       if (localGameOver) return;
       bird.velocity = bird.lift;
     };
     
-    // Yeni boru ekleme
+    // Add new pipe
     const addPipe = () => {
       const topHeight = Math.random() * (canvas.height - pipeGap - groundHeight - 120) + 60;
       const bottomY = topHeight + pipeGap;
@@ -150,7 +150,7 @@ const FlappyGame = ({ onClose }) => {
       });
     };
     
-    // Event listener'lar
+    // Event listeners
     const handleKeyDown = (e) => {
       if (e.code === 'Space') {
         jump();
@@ -167,39 +167,39 @@ const FlappyGame = ({ onClose }) => {
       jump();
     };
     
-    // Oyun döngüsü - FPS bağımsız
+    // Game loop - FPS independent
     const gameLoop = (timestamp) => {
-      // Delta time hesaplama
+      // Delta time calculation
       if (!lastTimeRef.current) lastTimeRef.current = timestamp;
       const deltaTime = Math.min((timestamp - lastTimeRef.current) / 1000, 1/30);
       lastTimeRef.current = timestamp;
       
-      // Canvas temizleme
+      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Arka plan çizimi - artık resimler önceden yüklendiği için kontrol gerekmez
-      // Math.floor kullanarak piksel-perfect pozisyonlama yapılması
+      // Background drawing - no need to check since images are preloaded
+      // Using Math.floor for pixel-perfect positioning
       bgPos = (bgPos - bgSpeedRef.current * deltaTime) % backgroundImage.width;
       
-      // Yeni konum hesaplama - negatif olmasını engelleyelim
+      // Calculate new position - prevent negative values
       const bgOffset = Math.floor(bgPos % backgroundImage.width);
       const bgX = bgOffset < 0 ? bgOffset + backgroundImage.width : bgOffset;
       
-      // Arka planı çiz - mobil cihazlarda optimizasyon için daha az resim kullanabiliriz
+      // Draw background - we can use fewer images on mobile devices for optimization
       ctx.drawImage(backgroundImage, bgX, 0, canvas.width + 2, canvas.height);
       ctx.drawImage(backgroundImage, bgX - backgroundImage.width, 0, canvas.width + 2, canvas.height);
       
-      // Eğer birden fazla resim gerekiyorsa sağa doğru da çiziyoruz
+      // Draw to the right if multiple images are needed
       if (bgX + canvas.width > backgroundImage.width) {
         ctx.drawImage(backgroundImage, bgX + backgroundImage.width, 0, canvas.width + 2, canvas.height);
       }
       
-      // Boruları güncelle ve çiz
+      // Update and draw pipes
       for (let i = pipes.length - 1; i >= 0; i--) {
         const pipe = pipes[i];
         pipe.x -= pipeSpeedRef.current * deltaTime;
         
-        // Boru görseli - artık yüklendiğinden emin olduğumuz için kontrol etmiyoruz
+        // Pipe visual - no need to check since we're sure it's loaded
         ctx.drawImage(pipeTopImage, pipe.x, pipe.topHeight - pipeTopImage.height, pipeWidth, pipeTopImage.height);
         ctx.drawImage(
           pipeBottomImage, 
@@ -209,13 +209,13 @@ const FlappyGame = ({ onClose }) => {
           canvas.height - pipe.bottomY
         );
         
-        // Skor kontrolü
+        // Score check
         if (bird.x > pipe.x + pipeWidth && !pipe.passed) {
           pipe.passed = true;
           updateScore();
         }
         
-        // Çarpışma kontrolü
+        // Collision detection
         if (
           bird.x + bird.width > pipe.x && 
           bird.x < pipe.x + pipeWidth && 
@@ -225,20 +225,20 @@ const FlappyGame = ({ onClose }) => {
           setIsGameOver(true);
         }
         
-        // Ekrandan çıkan boruları sil
+        // Remove pipes that are off screen
         if (pipe.x + pipeWidth < 0) {
           pipes.splice(i, 1);
         }
       }
       
-      // Kuşu güncelle
+      // Update bird
       bird.velocity += bird.gravity * deltaTime;
       bird.y += bird.velocity * deltaTime;
       
-      // Kuşu döndür (hıza göre)
+      // Rotate bird (based on velocity)
       bird.rotation = Math.min(Math.PI/2, Math.max(-Math.PI/2, bird.velocity * 0.002));
       
-      // Zemin ve tavan kontrolleri
+      // Ground and ceiling checks
       if (bird.y > canvas.height - bird.height - groundHeight) {
         bird.y = canvas.height - bird.height - groundHeight;
         localGameOver = true;
@@ -250,37 +250,37 @@ const FlappyGame = ({ onClose }) => {
         bird.velocity = 0;
       }
       
-      // Kuşu çiz
+      // Draw bird
       ctx.save();
       ctx.translate(bird.x + bird.width/2, bird.y + bird.height/2);
       ctx.rotate(bird.rotation);
       ctx.drawImage(birdImage, -bird.width/2, -bird.height/2, bird.width, bird.height);
       ctx.restore();
       
-      // Zemini çiz - optimizasyon için benzer yaklaşım
+      // Draw ground - similar approach for optimization
       groundPos = (groundPos - groundSpeedRef.current * deltaTime) % groundImage.width;
       
-      // Yeni konum hesaplama - negatif olmasını engelleyelim
+      // Calculate new position - prevent negative values
       const groundOffset = Math.floor(groundPos % groundImage.width);
       const groundX = groundOffset < 0 ? groundOffset + groundImage.width : groundOffset;
       
-      // Zemini çiz, +2 piksel kullanarak boşlukları kesinlikle kapat
+      // Draw ground, use +2 pixels to definitely close gaps
       ctx.drawImage(groundImage, groundX, canvas.height - groundHeight, canvas.width + 2, groundHeight);
       ctx.drawImage(groundImage, groundX - groundImage.width, canvas.height - groundHeight, canvas.width + 2, groundHeight);
       
-      // Eğer birden fazla resim gerekiyorsa sağa doğru da çiziyoruz
+      // Draw to the right if multiple images are needed
       if (groundX + canvas.width > groundImage.width) {
         ctx.drawImage(groundImage, groundX + groundImage.width, canvas.height - groundHeight, canvas.width + 2, groundHeight);
       }
       
-      // Yeni boru ekle - Zaman bazlı
+      // Add new pipe - Time based
       pipeSpawnTimeRef.current += deltaTime;
       if (pipeSpawnTimeRef.current >= PIPE_SPAWN_INTERVAL && !localGameOver) {
         pipeSpawnTimeRef.current = 0;
         addPipe();
       }
       
-      // Skoru çiz
+      // Draw score
       ctx.fillStyle = 'white';
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 5;
@@ -290,7 +290,7 @@ const FlappyGame = ({ onClose }) => {
       ctx.strokeText(localScore.toString(), canvas.width/2, 60);
       ctx.fillText(localScore.toString(), canvas.width/2, 60);
       
-      // Game Over ekranı
+      // Game Over screen
       if (localGameOver) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(0, canvas.height/2 - 100, canvas.width, 200);
@@ -336,18 +336,18 @@ const FlappyGame = ({ onClose }) => {
       }
     };
     
-    // Event listener'ları ekle
+    // Add event listeners
     window.addEventListener('keydown', handleKeyDown);
     canvas.addEventListener('click', handleMouseClick);
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     
-    // İlk boruyu ekle
+    // Add first pipe
     addPipe();
     
-    // Oyun döngüsünü başlat
+    // Start game loop
     gameLoopRef.current = requestAnimationFrame(gameLoop);
     
-    // Restart event listener'ları
+    // Restart event listeners
     canvas.addEventListener('click', restartGame);
     canvas.addEventListener('touchstart', (e) => {
       if (localGameOver) {
@@ -356,7 +356,7 @@ const FlappyGame = ({ onClose }) => {
       }
     }, { passive: false });
     
-    // Canvas boyutlarını güncelle
+    // Update canvas dimensions
     const handleResize = () => {
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
@@ -375,7 +375,7 @@ const FlappyGame = ({ onClose }) => {
     
     window.addEventListener('resize', handleResize);
     
-    // Temizlik fonksiyonu
+    // Cleanup function
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', handleResize);
@@ -386,9 +386,9 @@ const FlappyGame = ({ onClose }) => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isMobile, assetsLoaded]); // assetsLoaded'ı bağımlılıklara ekledik
+  }, [isMobile, assetsLoaded]); // Added assetsLoaded to dependencies
   
-  // Yükleme ekranını oluştur
+  // Create loading screen
   const renderLoadingScreen = () => {
     return (
       <div className="loading-screen">
