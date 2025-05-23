@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
-import FlappyGame from './FlappyGame'; // FlappyGame bileşenini import et
-import RockPaperScissors from './RockPaperScissors'; // RockPaperScissors bileşenini import et
-import TrollPopup from './TrollPopup'; // Troll popup bileşenini import et - YENİ
+import FlappyGame from './FlappyGame'; // Import FlappyGame component
+import RockPaperScissors from './RockPaperScissors'; // Import RockPaperScissors component
+import TrollPopup from './TrollPopup'; // Import Troll popup component - NEW
 // Import the background image
 import backgroundImage from './colosseum.jpg';
 
@@ -13,23 +13,23 @@ function App() {
   const [chartButtonPosition, setChartButtonPosition] = useState({ top: 51, left: 51 });
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [volume, setVolume] = useState(75);
-  const [showPlayButton, setShowPlayButton] = useState(false); // Easter egg butonunu kontrol etmek için
-  const [showFlappyGame, setShowFlappyGame] = useState(false); // Flappy Bird oyununu göstermek için
-  const [showRockPaperScissors, setShowRockPaperScissors] = useState(false); // Rock-Paper-Scissors için
-  const [showRPSButton, setShowRPSButton] = useState(false); // RPS butonunu kontrol etmek için
-  const [isMobile, setIsMobile] = useState(false); // Mobil cihaz tespiti için
+  const [showPlayButton, setShowPlayButton] = useState(false); // To control the Easter egg button
+  const [showFlappyGame, setShowFlappyGame] = useState(false); // To show Flappy Bird game
+  const [showRockPaperScissors, setShowRockPaperScissors] = useState(false); // For Rock-Paper-Scissors
+  const [showRPSButton, setShowRPSButton] = useState(false); // To control RPS button
+  const [isMobile, setIsMobile] = useState(false); // For mobile device detection
   const prevCharacterIndex = useRef(0);
   const hasShownConfetti = useRef(false);
   const audioRef = useRef(null);
   
-  // Mobil cihaz tespiti
+  // Mobile device detection
   useEffect(() => {
     const checkMobile = () => {
       const mobileCheck = window.innerWidth <= 768;
       setIsMobile(mobileCheck);
     };
     
-    // İlk yükleme ve boyut değişikliklerinde kontrol et
+    // Check on initial load and size changes
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
@@ -38,11 +38,11 @@ function App() {
     };
   }, []);
 
-  // Site açılır açılmaz RPS butonunu göster
+  // Show RPS button as soon as the site opens
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowRPSButton(true);
-    }, 1500); // 1.5 saniye sonra görünür
+    }, 1500); // Visible after 1.5 seconds
     
     return () => clearTimeout(timer);
   }, []);
@@ -58,7 +58,7 @@ function App() {
   const confettiImage = process.env.PUBLIC_URL + '/confetti.png';
   const soundEffect = process.env.PUBLIC_URL + '/JDMN.mp3';
   
-  // Chart button movement - Mobil cihazlarda daha ağırdan hareket etsin
+  // Chart button movement - Move slower on mobile devices
   useEffect(() => {
     if (showChart) return; // Don't move if chart is visible
     
@@ -68,7 +68,7 @@ function App() {
       left: Math.random() * 90
     });
     
-    // Initial velocity (relatively slow) - Mobil cihazlarda daha yavaş
+    // Initial velocity (relatively slow) - Slower on mobile devices
     const velocityFactor = isMobile ? 0.5 : 1;
     let vx = (0.05 + Math.random() * 0.05) * velocityFactor;
     let vy = (0.04 + Math.random() * 0.04) * velocityFactor;
@@ -145,7 +145,7 @@ function App() {
           
           // Show volume slider and Play button (Easter egg)
           setShowVolumeSlider(true);
-          setShowPlayButton(true); // Easter egg butonunu göster
+          setShowPlayButton(true); // Show Easter egg button
           
           // Play the sound immediately
           const playPromise = audio.play();
@@ -155,8 +155,8 @@ function App() {
               console.log('Audio started successfully');
             }).catch(e => {
               console.log('Audio playback was prevented by the browser:', e);
-              // Mobil cihazlarda otomatik oynatma kısıtlaması olabilir
-              // Kullanıcı etkileşimi sonrası ses çalmayı deneyebiliriz
+              // There may be autoplay restrictions on mobile devices
+              // We can try to play sound after user interaction
               setShowVolumeSlider(true);
               setShowPlayButton(true);
             });
@@ -166,11 +166,11 @@ function App() {
           audio.addEventListener('ended', () => {
             setShowVolumeSlider(false);
             confettiContainer.style.display = 'none';
-            // Play button kalıcı olarak gösterilecek
+            // Play button will be shown permanently
           });
         } catch (error) {
           console.error("Error playing sound:", error);
-          // Ses çalma hatası durumunda yine de butonları göster
+          // Still show buttons in case of sound playback error
           setShowVolumeSlider(true);
           setShowPlayButton(true);
         }
@@ -222,17 +222,17 @@ function App() {
     setShowRockPaperScissors(true);
   };
   
-  // Flappy Bird oyununu kapat
+  // Close Flappy Bird game
   const handleCloseFlappyGame = () => {
     setShowFlappyGame(false);
   };
 
-  // Rock-Paper-Scissors oyununu kapat
+  // Close Rock-Paper-Scissors game
   const handleCloseRockPaperScissors = () => {
     setShowRockPaperScissors(false);
   };
   
-  // Touch event handlers for mobil devices
+  // Touch event handlers for mobile devices
   const handleTouchStart = (e) => {
     // Prevent default touch behavior for chart button
     if (e.target.className === 'chart-button') {
@@ -242,14 +242,14 @@ function App() {
   
   return (
     <div className="App" style={{ backgroundImage: `url(${backgroundImage})` }}>
-      {/* Troll Popup - Site açılırken otomatik gösterilir - YENİ */}
+      {/* Troll Popup - Automatically shown when site opens - NEW */}
       <TrollPopup />
       
       <div className="confetti-container" style={{ display: 'none' }}>
         {confettiElements}
       </div>
       
-      {/* RPS Button - Resmin fiziksel üstünde */}
+      {/* RPS Button - Physically above the image */}
       {showRPSButton && (
         <button className="rps-button-top" onClick={handleRPSClick}>
           🎮 Rock Paper Scissors
@@ -293,7 +293,7 @@ function App() {
         </button>
       )}
       
-      {/* Moving Chart Button - mobil cihazlarda özel touch event handler */}
+      {/* Moving Chart Button - special touch event handler on mobile devices */}
       <button 
         className="chart-button" 
         style={{ 
