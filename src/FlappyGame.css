@@ -103,7 +103,7 @@
   }
 }
 
-/* Mobil uyumluluk için medya sorguları */
+/* Media queries for mobile compatibility */
 @media (max-width: 768px) {
   .game-instructions {
     font-size: 16px;
@@ -150,9 +150,9 @@
   }
 }
 
-/* FlappyGame.css dosyasına eklenecek stiller */
+/* Styles to be added to FlappyGame.css file */
 
-/* Yükleme ekranı stilleri */
+/* Loading screen styles */
 .loading-screen {
   display: flex;
   flex-direction: column;
@@ -205,7 +205,7 @@
   100% { transform: scale(1); }
 }
 
-/* Mobil uyumluluk için yükleme ekranı düzenlemeleri */
+/* Loading screen adjustments for mobile compatibility */
 @media (max-width: 768px) {
   .loading-screen {
     height: 60vh;
@@ -238,4 +238,3 @@
     font-size: 14px;
   }
 }
-

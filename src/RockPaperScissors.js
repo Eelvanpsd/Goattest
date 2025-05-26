@@ -8,12 +8,9 @@ import winPng from './assets/win.png';
 import losePng from './assets/lose.png';
 import tiePng from './assets/tie.png';
 
-// UPDATED CONTRACT ADDRESS - Your deployed contract
-const CONTRACT_ADDRESS = '0xC46871Ee29456a1A2aE582D6352a37d29BE3Bc74';
+// UPDATED CONTRACT ADDRESS - Your new deployed contract
+const CONTRACT_ADDRESS = '0xF6Fe198eCeC3f2dc24f99bC5EFC898344EFfF99F';
 const TOKEN_ADDRESS = '0xB9C188BC558a82a1eE9E75AE0857df443F407632';
-
-// Backend service URL (bot service endpoint)
-const BOT_SERVICE_URL = process.env.REACT_APP_BOT_SERVICE_URL || 'http://localhost:3001';
 
 // Avalanche network configuration
 const AVALANCHE_NETWORK = {
@@ -28,41 +25,72 @@ const AVALANCHE_NETWORK = {
   blockExplorerUrls: ['https://snowtrace.io/']
 };
 
-// Contract ABI
+// New Contract ABI based on your provided ABI
 const CONTRACT_ABI = [
-  "function createGame(uint256 _bet, bytes32 _commitHash) external",
-  "function joinGame(uint256 _id, uint8 _choice) external",
-  "function reveal(uint256 _id, uint8 _choice, uint256 _nonce) external",
-  "function autoRevealWithProof(uint256 _id, uint8 _revealedChoice, uint256 _nonce) external",
-  "function autoReveal(uint256 _id) external",
-  "function cancel(uint256 _id) external",
-  "function forceCancel(uint256 _id) external",
-  "function addBot(address _bot) external",
-  "function removeBot(address _bot) external",
+  // Constructor
+  {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
   
-  // View functions
-  "function getActive() external view returns (uint256[])",
-  "function getFinished(uint256 _limit) external view returns (uint256[])",
-  "function getGame(uint256 _id) external view returns (tuple(address p1, address p2, uint256 bet, bytes32 p1CommitHash, uint8 p2Choice, uint8 state, uint256 created, uint256 joinedAt, address winner, uint8 p1Choice, bool autoResolved), uint256)",
-  "function getStats(address _player) external view returns (tuple(uint256 played, uint256 won, uint256 bet, uint256 winnings, uint256 ties))",
-  "function canAutoResolve(uint256 _id) external view returns (bool)",
-  "function hash(uint8 _choice, uint256 _nonce, address _player) external pure returns (bytes32)",
-  "function authorizedBots(address _bot) external view returns (bool)",
-  
-  // Constants
-  "function HOUSE_FEE() external view returns (uint256)",
-  "function AUTO_RESOLVE_TIME() external view returns (uint256)",
-  "function TIME_TOLERANCE() external view returns (uint256)",
+  // Errors
+  {"inputs":[{"internalType":"address","name":"have","type":"address"},{"internalType":"address","name":"want","type":"address"}],"name":"OnlyVRFWrapperCanFulfill","type":"error"},
+  {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
+  {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
   
   // Events
-  "event GameCreated(uint256 indexed id, address indexed p1, uint256 bet)",
-  "event PlayerJoined(uint256 indexed id, address indexed p2)",
-  "event GameAutoResolved(uint256 indexed id, address indexed winner, uint256 winnings)",
-  "event GameTied(uint256 indexed id, uint256 refundAmount)",
-  "event GameCancelled(uint256 indexed id)",
-  "event ChoiceRevealed(uint256 indexed id, address indexed p1, uint8 choice)",
-  "event BotAuthorized(address indexed bot)",
-  "event BotRevoked(address indexed bot)"
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"id","type":"uint256"}],"name":"GameCancelled","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"id","type":"uint256"},{"indexed":true,"internalType":"address","name":"p1","type":"address"},{"indexed":false,"internalType":"uint256","name":"bet","type":"uint256"},{"indexed":false,"internalType":"enum FauxRockPaperScissors.Choice","name":"p1Choice","type":"uint8"},{"indexed":false,"internalType":"enum FauxRockPaperScissors.PaymentType","name":"paymentType","type":"uint8"}],"name":"GameCreated","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"id","type":"uint256"},{"indexed":true,"internalType":"address","name":"p2","type":"address"},{"indexed":false,"internalType":"enum FauxRockPaperScissors.Choice","name":"p2Choice","type":"uint8"}],"name":"GameJoined","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"id","type":"uint256"},{"indexed":true,"internalType":"address","name":"winner","type":"address"},{"indexed":false,"internalType":"uint256","name":"winnings","type":"uint256"},{"indexed":false,"internalType":"bool","name":"isTie","type":"bool"}],"name":"GameResolved","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"bool","name":"isMaxApproval","type":"bool"}],"name":"TokenApproval","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"id","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"requestId","type":"uint256"}],"name":"VRFRequested","type":"event"},
+  
+  // Functions
+  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"active","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"activeGameIndex","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"_betAmount","type":"uint256"}],"name":"approveBetAmount","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"approveMaxAmount","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"callbackGasLimit","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"_id","type":"uint256"}],"name":"cancel","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"_user","type":"address"},{"internalType":"uint256","name":"_betAmount","type":"uint256"}],"name":"checkApproval","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"enum FauxRockPaperScissors.Choice","name":"_choice","type":"uint8"}],"name":"createGameAVAX","outputs":[],"stateMutability":"payable","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"_bet","type":"uint256"},{"internalType":"enum FauxRockPaperScissors.Choice","name":"_choice","type":"uint8"}],"name":"createGameERC20","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"emergency","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"_id","type":"uint256"}],"name":"emergencyCancel","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"fees","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"feesAVAX","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"finished","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"gameId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"gameToken","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"games","outputs":[{"internalType":"address","name":"p1","type":"address"},{"internalType":"address","name":"p2","type":"address"},{"internalType":"uint256","name":"bet","type":"uint256"},{"internalType":"enum FauxRockPaperScissors.Choice","name":"p1Choice","type":"uint8"},{"internalType":"enum FauxRockPaperScissors.Choice","name":"p2Choice","type":"uint8"},{"internalType":"enum FauxRockPaperScissors.PaymentType","name":"paymentType","type":"uint8"},{"internalType":"enum FauxRockPaperScissors.State","name":"state","type":"uint8"},{"internalType":"address","name":"winner","type":"address"},{"internalType":"uint256","name":"created","type":"uint256"},{"internalType":"uint256","name":"resolvedAt","type":"uint256"},{"internalType":"uint256","name":"vrfRequestId","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"getActive","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"getActiveCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"getContractBalances","outputs":[{"internalType":"uint256","name":"tokenBalance","type":"uint256"},{"internalType":"uint256","name":"avaxBalance","type":"uint256"},{"internalType":"uint256","name":"fees_","type":"uint256"},{"internalType":"uint256","name":"feesAVAX_","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"_limit","type":"uint256"}],"name":"getFinished","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"getFinishedCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"_id","type":"uint256"}],"name":"getGame","outputs":[{"components":[{"internalType":"address","name":"p1","type":"address"},{"internalType":"address","name":"p2","type":"address"},{"internalType":"uint256","name":"bet","type":"uint256"},{"internalType":"enum FauxRockPaperScissors.Choice","name":"p1Choice","type":"uint8"},{"internalType":"enum FauxRockPaperScissors.Choice","name":"p2Choice","type":"uint8"},{"internalType":"enum FauxRockPaperScissors.PaymentType","name":"paymentType","type":"uint8"},{"internalType":"enum FauxRockPaperScissors.State","name":"state","type":"uint8"},{"internalType":"address","name":"winner","type":"address"},{"internalType":"uint256","name":"created","type":"uint256"},{"internalType":"uint256","name":"resolvedAt","type":"uint256"},{"internalType":"uint256","name":"vrfRequestId","type":"uint256"}],"internalType":"struct FauxRockPaperScissors.Game","name":"","type":"tuple"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"getLinkToken","outputs":[{"internalType":"contract LinkTokenInterface","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"_player","type":"address"}],"name":"getPlayerActiveGames","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"_player","type":"address"}],"name":"getStats","outputs":[{"components":[{"internalType":"uint256","name":"played","type":"uint256"},{"internalType":"uint256","name":"won","type":"uint256"},{"internalType":"uint256","name":"bet","type":"uint256"},{"internalType":"uint256","name":"winnings","type":"uint256"},{"internalType":"uint256","name":"ties","type":"uint256"}],"internalType":"struct FauxRockPaperScissors.Stats","name":"","type":"tuple"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"houseFeePercentage","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"i_vrfV2PlusWrapper","outputs":[{"internalType":"contract IVRFV2PlusWrapper","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"_id","type":"uint256"},{"internalType":"enum FauxRockPaperScissors.Choice","name":"_choice","type":"uint8"}],"name":"joinGame","outputs":[],"stateMutability":"payable","type":"function"},
+  {"inputs":[],"name":"minBetAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"minVrfBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"numWords","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"playerActiveGames","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"_requestId","type":"uint256"},{"internalType":"uint256[]","name":"_randomWords","type":"uint256[]"}],"name":"rawFulfillRandomWords","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"requestConfirmations","outputs":[{"internalType":"uint16","name":"","type":"uint16"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"_gameToken","type":"address"},{"internalType":"uint256","name":"_houseFee","type":"uint256"},{"internalType":"uint256","name":"_minBet","type":"uint256"},{"internalType":"uint32","name":"_callbackGasLimit","type":"uint32"},{"internalType":"uint16","name":"_requestConfirmations","type":"uint16"},{"internalType":"uint256","name":"_minVrfBalance","type":"uint256"}],"name":"setConfig","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"bool","name":"_paused","type":"bool"}],"name":"setPaused","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"stats","outputs":[{"internalType":"uint256","name":"played","type":"uint256"},{"internalType":"uint256","name":"won","type":"uint256"},{"internalType":"uint256","name":"bet","type":"uint256"},{"internalType":"uint256","name":"winnings","type":"uint256"},{"internalType":"uint256","name":"ties","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"vrfRequestToGameId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"stateMutability":"payable","type":"receive"}
 ];
 
 // ERC20 ABI (for token operations)
@@ -78,16 +106,21 @@ const GAME_STATES = {
   0: 'Waiting',
   1: 'Joined', 
   2: 'Done',
-  3: 'Cancelled',
-  4: 'Tied'
+  3: 'Cancelled'
 };
 
 // Choices
 const CHOICES = {
-  0: { name: 'Rock', emoji: './rock.png', icon: './rock.png' },
-  1: { name: 'Paper', emoji: './paper.png', icon: './paper.png' },
-  2: { name: 'Scissors', emoji: './scissors.png', icon: './scissors.png' },
+  0: { name: 'Rock', emoji: '🪨', icon: './rock.png' },
+  1: { name: 'Paper', emoji: '📄', icon: './paper.png' },
+  2: { name: 'Scissors', emoji: '✂️', icon: './scissors.png' },
   3: { name: 'None', emoji: '❓', icon: '❓' }
+};
+
+// Payment types
+const PAYMENT_TYPES = {
+  0: 'ERC20',
+  1: 'AVAX'
 };
 
 const RockPaperScissors = ({ onClose }) => {
@@ -112,72 +145,57 @@ const RockPaperScissors = ({ onClose }) => {
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [betAmount, setBetAmount] = useState('');
   const [tokenBalance, setTokenBalance] = useState('0');
+  const [avaxBalance, setAvaxBalance] = useState('0');
   const [tokenAllowance, setTokenAllowance] = useState('0');
   const [gameResultPopup, setGameResultPopup] = useState(null);
+  const [paymentType, setPaymentType] = useState('ERC20'); // 'ERC20' or 'AVAX'
+  const [minBetAmount, setMinBetAmount] = useState('0');
   
-  // Game specific state
-  const [pendingReveals, setPendingReveals] = useState(new Map());
-  
-  // Bot connection state
-  const [botConnected, setBotConnected] = useState(false);
-  
-  // Add mobile-specific state and handlers
-  const [isMobile, setIsMobile] = useState(false);
-
   // Enhanced statistics state
   const [activeStatsSection, setActiveStatsSection] = useState('summary');
   const [winRateHistory, setWinRateHistory] = useState([]);
 
+  // Mobile-specific state
+  const [isMobile, setIsMobile] = useState(false);
+
   // Refs for cleanup
   const eventListenersRef = useRef(new Map());
   const intervalsRef = useRef(new Map());
-  
-  // Add this ref to store the win rate history data persistently
   const winRateHistoryRef = useRef(null);
   
-  // Mock data for choice statistics (replace with actual data in production)
+  // Mock data for choice statistics
   const choiceStats = {
     yours: [35, 40, 25], // Rock, Paper, Scissors percentages
     opponents: [30, 45, 25] // Rock, Paper, Scissors percentages
   };
 
-  // Generate win rate history data with consistent values - MODIFIED to remove date information
+  // Generate win rate history data
   useEffect(() => {
     if (playerStats && finishedGames && finishedGames.length > 0) {
-      // Only generate the data once when stats are first loaded or when account changes
       if (!winRateHistoryRef.current || winRateHistoryRef.current.accountId !== account) {
-        // Create deterministic win rate history based on player stats and account
         const currentWinRate = playerStats.played.gt(0) 
           ? (playerStats.won.toNumber() / playerStats.played.toNumber()) * 100
-          : 50; // Default to 50% if no games played
+          : 50;
         
-        // Generate historical data with variations based on the player's current win rate
         const historyData = Array.from({ length: 12 }, (_, i) => {
-          // Use player ID (account address) as a seed for the variation
           const seed = account ? parseInt(account.slice(-8), 16) : 0;
-          
-          // Create a deterministic variation using the index and account
-          const hash = (seed + i * 7919) % 21 - 10; // Range of -10 to +10
-          
-          // For the latest data point, use the exact current win rate
+          const hash = (seed + i * 7919) % 21 - 10;
           const rate = (i === 11) 
             ? currentWinRate 
             : Math.max(0, Math.min(100, currentWinRate + hash));
           
           return {
-            index: i + 1, // Sequential index instead of month
+            index: i + 1,
             rate: parseFloat(rate.toFixed(1))
           };
         });
         
-        // Store the generated data in the ref with the account ID
         winRateHistoryRef.current = {
           data: historyData,
           accountId: account
         };
       }
       
-      // Set the state from the ref
       setWinRateHistory(winRateHistoryRef.current.data);
     }
   }, [playerStats, finishedGames, account]);
@@ -198,36 +216,9 @@ const RockPaperScissors = ({ onClose }) => {
     };
   }, []);
 
-  // Bot connection test function
-  const testBotConnection = async () => {
-    try {
-      const response = await fetch(`${BOT_SERVICE_URL}/health`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'cors',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setBotConnected(true);
-        setError('');
-        return true;
-      } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-    } catch (error) {
-      setBotConnected(false);
-      return false;
-    }
-  };
-
   // Check if already connected on component mount
   useEffect(() => {
     const checkConnection = async () => {
-      await testBotConnection();
-      
       if (window.ethereum) {
         try {
           const accounts = await window.ethereum.request({ 
@@ -242,7 +233,7 @@ const RockPaperScissors = ({ onClose }) => {
             const publicRefreshInterval = setInterval(async () => {
               try {
                 if (!account) {
-                  await loadPublicData(false); // false = no loading animation
+                  await loadPublicData(false);
                 }
               } catch (error) {
                 console.error('Public periodic refresh failed:', error);
@@ -271,19 +262,6 @@ const RockPaperScissors = ({ onClose }) => {
     }
   }, [account]);
 
-  // Bot connection monitoring
-  useEffect(() => {
-    testBotConnection();
-    
-    const botTestInterval = setInterval(testBotConnection, 60000);
-    intervalsRef.current.set('bot_test', botTestInterval);
-    
-    return () => {
-      clearInterval(botTestInterval);
-      intervalsRef.current.delete('bot_test');
-    };
-  }, []);
-
   // Load public data (all active games) even without wallet connection
   const loadPublicData = async (showLoading = false) => {
     try {
@@ -297,23 +275,19 @@ const RockPaperScissors = ({ onClose }) => {
       const activeIds = await publicContract.getActive();
       const activeGamesData = await Promise.all(
         activeIds.map(async (id) => {
-          const [game, deadline] = await publicContract.getGame(id);
-          return { id: id.toString(), game, deadline };
+          const [game] = await publicContract.getGame(id);
+          return { id: id.toString(), game };
         })
       );
       
-      // Filter out games that are in "Joined" state (state 1) for non-connected users
-      // and games that are "Joined" but user is not a player
+      // Filter out games that are in "Joined" state for non-connected users
       const filteredGames = activeGamesData.filter(gameData => {
         const { game } = gameData;
         
-        // If user is not connected, only show "Waiting" games (state 0)
         if (!account) {
           return game.state === 0;
         }
         
-        // If user is connected, show all active games where user is involved
-        // or games that are still in "Waiting" state
         const isPlayer1 = game.p1.toLowerCase() === account.toLowerCase();
         const isPlayer2 = game.p2.toLowerCase() === account.toLowerCase();
         const isInvolved = isPlayer1 || isPlayer2;
@@ -341,7 +315,7 @@ const RockPaperScissors = ({ onClose }) => {
     });
     eventListenersRef.current.clear();
     
-    intervalsRef.current.forEach((interval, key) => {
+    intervalsRef.current.forEach((interval) => {
       clearTimeout(interval);
       clearInterval(interval);
     });
@@ -422,7 +396,7 @@ const RockPaperScissors = ({ onClose }) => {
       await checkNetwork();
       
       if (networkCorrect) {
-        await loadGameData(gameContract, tokenContract, account, false); // false = no loading animation
+        await loadGameData(gameContract, tokenContract, account, false);
         setupEventListeners(gameContract);
       }
       
@@ -437,12 +411,12 @@ const RockPaperScissors = ({ onClose }) => {
   // Load game data when network is correct
   useEffect(() => {
     if (contract && tokenContract && account && networkCorrect) {
-      loadGameData(contract, tokenContract, account, false); // false = no loading animation
+      loadGameData(contract, tokenContract, account, false);
       setupEventListeners(contract);
       
       const refreshInterval = setInterval(async () => {
         try {
-          await loadGameData(contract, tokenContract, account, false); // false = no loading animation
+          await loadGameData(contract, tokenContract, account, false);
         } catch (error) {
           console.error('Periodic refresh failed:', error);
         }
@@ -461,20 +435,19 @@ const RockPaperScissors = ({ onClose }) => {
   const setupEventListeners = (gameContract) => {
     const events = [
       'GameCreated',
-      'PlayerJoined', 
-      'GameAutoResolved',
-      'GameTied',
+      'GameJoined', 
+      'GameResolved',
       'GameCancelled',
-      'ChoiceRevealed'
+      'VRFRequested'
     ];
     
     const autoRefresh = async (delay = 2000) => {
       setTimeout(async () => {
         try {
           if (account && contract && tokenContract) {
-            await loadGameData(contract, tokenContract, account, false); // false = no loading animation
+            await loadGameData(contract, tokenContract, account, false);
           } else {
-            await loadPublicData(false); // false = no loading animation
+            await loadPublicData(false);
           }
         } catch (error) {
           console.error('Auto refresh failed:', error);
@@ -490,17 +463,17 @@ const RockPaperScissors = ({ onClose }) => {
           autoRefresh(1000);
         }
         
-        if (eventName === 'PlayerJoined') {
+        if (eventName === 'GameJoined') {
           autoRefresh(1500);
         }
         
-        if (eventName === 'ChoiceRevealed') {
+        if (eventName === 'VRFRequested') {
           autoRefresh(1000);
         }
         
-        // Handle auto-resolved games
-        if (eventName === 'GameAutoResolved') {
-          const [gameId, winner, winnings] = args;
+        // Handle resolved games
+        if (eventName === 'GameResolved') {
+          const [gameId, winner, winnings, isTie] = args;
           const gameIdStr = gameId.toString();
           const winnerAddr = winner.toLowerCase();
           const userAddr = account?.toLowerCase();
@@ -513,53 +486,32 @@ const RockPaperScissors = ({ onClose }) => {
               const isInvolved = isPlayer1 || isPlayer2;
               
               if (isInvolved) {
-                const isWinner = winnerAddr === userAddr;
-                
-                setGameResultPopup({
-                  gameId: gameIdStr,
-                  winner: winner,
-                  winnings: winnings,
-                  isWinner: isWinner,
-                  result: isWinner ? 'won' : 'lost',
-                  playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
-                  opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
-                  betAmount: gameDetails.bet,
-                  autoResolved: true
-                });
+                if (isTie) {
+                  setGameResultPopup({
+                    gameId: gameIdStr,
+                    result: 'tie',
+                    refundAmount: gameDetails.bet,
+                    playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
+                    opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
+                    betAmount: gameDetails.bet
+                  });
+                } else {
+                  const isWinner = winnerAddr === userAddr;
+                  
+                  setGameResultPopup({
+                    gameId: gameIdStr,
+                    winner: winner,
+                    winnings: winnings,
+                    isWinner: isWinner,
+                    result: isWinner ? 'won' : 'lost',
+                    playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
+                    opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
+                    betAmount: gameDetails.bet
+                  });
+                }
               }
             } catch (error) {
               console.error('Error fetching game details for popup:', error);
-            }
-          }, 1000);
-          
-          autoRefresh(2000);
-        }
-        
-        // Handle tie events
-        if (eventName === 'GameTied') {
-          const [gameId, refundAmount] = args;
-          const gameIdStr = gameId.toString();
-          const userAddr = account?.toLowerCase();
-          
-          setTimeout(async () => {
-            try {
-              const [gameDetails] = await gameContract.getGame(gameId);
-              const isPlayer1 = gameDetails.p1.toLowerCase() === userAddr;
-              const isPlayer2 = gameDetails.p2.toLowerCase() === userAddr;
-              const isInvolved = isPlayer1 || isPlayer2;
-              
-              if (isInvolved) {
-                setGameResultPopup({
-                  gameId: gameIdStr,
-                  result: 'tie',
-                  refundAmount: refundAmount,
-                  playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
-                  opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
-                  betAmount: gameDetails.bet
-                });
-              }
-            } catch (error) {
-              console.error('Error fetching game details for tie popup:', error);
             }
           }, 1000);
           
@@ -579,53 +531,60 @@ const RockPaperScissors = ({ onClose }) => {
         setLoading(true);
       }
       
+      // Get active games
       const activeIds = await gameContract.getActive();
       const activeGamesData = await Promise.all(
         activeIds.map(async (id) => {
-          const [game, deadline] = await gameContract.getGame(id);
-          return { id: id.toString(), game, deadline };
+          const [game] = await gameContract.getGame(id);
+          return { id: id.toString(), game };
         })
       );
       
-      // Filter active games: show "Waiting" games to everyone, 
-      // but "Joined" games only to players involved
+      // Filter active games
       const filteredActiveGames = activeGamesData.filter(gameData => {
         const { game } = gameData;
         
-        // Show all "Waiting" games (state 0)
         if (game.state === 0) {
           return true;
         }
         
-        // For "Joined" games (state 1), only show if user is involved
         if (game.state === 1) {
           const isPlayer1 = game.p1.toLowerCase() === userAccount.toLowerCase();
           const isPlayer2 = game.p2.toLowerCase() === userAccount.toLowerCase();
           return isPlayer1 || isPlayer2;
         }
         
-        // Don't show other states (Done, Cancelled, Tied) in active games
         return false;
       });
       
       setActiveGames(filteredActiveGames);
       
+      // Get finished games
       const finishedIds = await gameContract.getFinished(20);
       const finishedGamesData = await Promise.all(
         finishedIds.map(async (id) => {
-          const [game, deadline] = await gameContract.getGame(id);
-          return { id: id.toString(), game, deadline };
+          const [game] = await gameContract.getGame(id);
+          return { id: id.toString(), game };
         })
       );
       setFinishedGames(finishedGamesData);
       
+      // Get player stats
       const stats = await gameContract.getStats(userAccount);
       setPlayerStats(stats);
       
+      // Get balances
       const balance = await tokenContract.balanceOf(userAccount);
       const allowance = await tokenContract.allowance(userAccount, CONTRACT_ADDRESS);
+      const avaxBal = await provider.getBalance(userAccount);
+      
       setTokenBalance(ethers.utils.formatEther(balance));
       setTokenAllowance(ethers.utils.formatEther(allowance));
+      setAvaxBalance(ethers.utils.formatEther(avaxBal));
+      
+      // Get minimum bet amount
+      const minBet = await gameContract.minBetAmount();
+      setMinBetAmount(ethers.utils.formatEther(minBet));
       
     } catch (error) {
       console.error('Failed to load game data:', error);
@@ -637,24 +596,21 @@ const RockPaperScissors = ({ onClose }) => {
     }
   };
 
-  const generateNonce = () => {
-    return ethers.BigNumber.from(ethers.utils.randomBytes(32));
-  };
-
-  // Create game function
-  const createGame = async () => {
+  // Create game function (ERC20)
+  const createGameERC20 = async () => {
     if (!selectedChoice && selectedChoice !== 0) {
       setError('Please select your move');
       return;
     }
     
-    if (!betAmount || parseInt(betAmount) <= 0) {
+    if (!betAmount || parseFloat(betAmount) <= 0) {
       setError('Please enter a valid bet amount');
       return;
     }
     
-    if (parseInt(betAmount) < 5000) {
-      setError('Minimum bet amount is 5000 tokens');
+    const minBetFloat = parseFloat(minBetAmount);
+    if (parseFloat(betAmount) < minBetFloat) {
+      setError(`Minimum bet amount is ${minBetFloat} tokens`);
       return;
     }
     
@@ -673,10 +629,8 @@ const RockPaperScissors = ({ onClose }) => {
       setError('');
       
       const betWei = ethers.utils.parseEther(betAmount);
-      const nonce = generateNonce();
       
-      const hash = await contract.hash(selectedChoice, nonce, account);
-      
+      // Check and approve tokens if needed
       const currentAllowance = ethers.BigNumber.from(ethers.utils.parseEther(tokenAllowance));
       if (currentAllowance.lt(betWei)) {
         const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betWei);
@@ -686,54 +640,15 @@ const RockPaperScissors = ({ onClose }) => {
         setTokenAllowance(ethers.utils.formatEther(newAllowance));
       }
       
-      const tx = await contract.createGame(betWei, hash);
-      const receipt = await tx.wait();
-      
-      const gameCreatedEvent = receipt.events.find(e => e.event === 'GameCreated');
-      if (gameCreatedEvent) {
-        const gameId = gameCreatedEvent.args.id.toString();
-        
-        const revealData = {
-          choice: selectedChoice,
-          nonce: nonce.toString(),
-          account: account,
-          hash: hash
-        };
-        
-        try {
-          const encryptedData = btoa(JSON.stringify(revealData));
-          
-          const response = await fetch(`${BOT_SERVICE_URL}/api/store-reveal`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              gameId: gameId,
-              encryptedRevealData: encryptedData
-            }),
-            signal: AbortSignal.timeout(10000)
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          
-          setBotConnected(true);
-        } catch (error) {
-          const encryptedData = btoa(JSON.stringify(revealData));
-          localStorage.setItem(`reveal_${gameId}`, encryptedData);
-          setBotConnected(false);
-        }
-        
-        setPendingReveals(prev => new Map(prev.set(gameId, revealData)));
-      }
+      // Create game with ERC20 tokens
+      const tx = await contract.createGameERC20(betWei, selectedChoice);
+      await tx.wait();
       
       setSelectedChoice(null);
       setBetAmount('');
       setCurrentView('games');
       
-      await loadGameData(contract, tokenContract, account, false); // false = no loading animation
+      await loadGameData(contract, tokenContract, account, false);
       
     } catch (error) {
       console.error('Failed to create game:', error);
@@ -743,36 +658,98 @@ const RockPaperScissors = ({ onClose }) => {
     }
   };
 
+  // Create game function (AVAX)
+  const createGameAVAX = async () => {
+    if (!selectedChoice && selectedChoice !== 0) {
+      setError('Please select your move');
+      return;
+    }
+    
+    if (!betAmount || parseFloat(betAmount) <= 0) {
+      setError('Please enter a valid bet amount');
+      return;
+    }
+    
+    if (!contract) {
+      setError('Contract not initialized');
+      return;
+    }
+    
+    if (!networkCorrect) {
+      setError('Please switch to Avalanche network');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setError('');
+      
+      const betWei = ethers.utils.parseEther(betAmount);
+      
+      // Create game with AVAX
+      const tx = await contract.createGameAVAX(selectedChoice, { value: betWei });
+      await tx.wait();
+      
+      setSelectedChoice(null);
+      setBetAmount('');
+      setCurrentView('games');
+      
+      await loadGameData(contract, tokenContract, account, false);
+      
+    } catch (error) {
+      console.error('Failed to create game:', error);
+      setError('Failed to create game: ' + (error.reason || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create game wrapper function
+  const createGame = async () => {
+    if (paymentType === 'AVAX') {
+      await createGameAVAX();
+    } else {
+      await createGameERC20();
+    }
+  };
+
   // Join existing game
-  const joinGame = async (gameId, choice) => {
+  const joinGame = async (gameId, choice, game) => {
     if (!contract || !tokenContract) return;
     
     try {
       setLoading(true);
       setError('');
       
-      const [game] = await contract.getGame(gameId);
       const betAmount = game.bet;
+      const isAVAXGame = game.paymentType === 1;
       
-      const balance = await tokenContract.balanceOf(account);
-      if (balance.lt(betAmount)) {
-        setError(`Insufficient balance. You need ${formatTokenAmount(betAmount)} tokens to join this game.`);
-        return;
-      }
-      
-      const allowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
-      if (allowance.lt(betAmount)) {
-        const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betAmount);
-        await approveTx.wait();
+      if (isAVAXGame) {
+        // Join with AVAX
+        const tx = await contract.joinGame(gameId, choice, { value: betAmount });
+        await tx.wait();
+      } else {
+        // Join with ERC20 tokens
+        const balance = await tokenContract.balanceOf(account);
+        if (balance.lt(betAmount)) {
+          setError(`Insufficient balance. You need ${formatTokenAmount(betAmount)} tokens to join this game.`);
+          return;
+        }
         
-        const newAllowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
-        setTokenAllowance(ethers.utils.formatEther(newAllowance));
+        const allowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
+        if (allowance.lt(betAmount)) {
+          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betAmount);
+          await approveTx.wait();
+          
+          const newAllowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
+          setTokenAllowance(ethers.utils.formatEther(newAllowance));
+        }
+        
+        const tx = await contract.joinGame(gameId, choice);
+        await tx.wait();
       }
       
-      const tx = await contract.joinGame(gameId, choice);
-      await tx.wait();
-      
-      await loadGameData(contract, tokenContract, account, false); // false = no loading animation
+      await loadGameData(contract, tokenContract, account, false);
       
     } catch (error) {
       console.error('Failed to join game:', error);
@@ -793,14 +770,7 @@ const RockPaperScissors = ({ onClose }) => {
       const tx = await contract.cancel(gameId);
       await tx.wait();
       
-      localStorage.removeItem(`reveal_${gameId}`);
-      setPendingReveals(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(gameId);
-        return newMap;
-      });
-      
-      await loadGameData(contract, tokenContract, account, false); // false = no loading animation
+      await loadGameData(contract, tokenContract, account, false);
       
     } catch (error) {
       console.error('Failed to cancel game:', error);
@@ -821,11 +791,21 @@ const RockPaperScissors = ({ onClose }) => {
     return Math.floor(parseFloat(ethers.utils.formatEther(amount))).toString();
   };
 
+  // Format AVAX amount
+  const formatAvaxAmount = (amount) => {
+    return parseFloat(ethers.utils.formatEther(amount)).toFixed(4);
+  };
+
+  // Get currency symbol
+  const getCurrencySymbol = (paymentType) => {
+    return paymentType === 1 ? 'AVAX' : 'tokens';
+  };
+
   // Game result popup component
   const renderGameResultPopup = () => {
     if (!gameResultPopup) return null;
     
-    const { gameId, winner, winnings, isWinner, result, refundAmount, playerChoice, opponentChoice, betAmount, autoResolved } = gameResultPopup;
+    const { gameId, winner, winnings, isWinner, result, refundAmount, playerChoice, opponentChoice, betAmount } = gameResultPopup;
     
     return (
       <div className="game-result-popup-overlay">
@@ -883,28 +863,24 @@ const RockPaperScissors = ({ onClose }) => {
                 </div>
               )}
               
-              {betAmount && (
-                <p><strong>Bet Amount:</strong> {formatTokenAmount(betAmount)} tokens</p>
-              )}
-              
               {result === 'tie' && refundAmount && (
                 <p className="refund-highlight">
-                  <strong>Refunded:</strong> {formatTokenAmount(refundAmount)} tokens (no fee)
+                  <strong>Refunded:</strong> Full amount (no fee on ties)
                 </p>
               )}
               
               {winner && <p><strong>Winner:</strong> {formatAddress(winner)}</p>}
               {winnings && (
                 <>
-                  <p><strong>Total Prize:</strong> {formatTokenAmount(winnings)} tokens</p>
-                  {result === 'won' && (
+                  <p><strong>Total Prize:</strong> {formatTokenAmount(winnings)}</p>
+                  {result === 'won' && betAmount && (
                     <p className="profit-highlight">
-                      <strong>Your Profit:</strong> +{formatTokenAmount(winnings.sub(betAmount || 0))} tokens
+                      <strong>Your Profit:</strong> +{formatTokenAmount(winnings.sub(betAmount))}
                     </p>
                   )}
-                  {result === 'lost' && (
+                  {result === 'lost' && betAmount && (
                     <p className="loss-highlight">
-                      <strong>Your Loss:</strong> -{formatTokenAmount(betAmount || 0)} tokens
+                      <strong>Your Loss:</strong> -{formatTokenAmount(betAmount)}
                     </p>
                   )}
                 </>
@@ -955,6 +931,7 @@ const RockPaperScissors = ({ onClose }) => {
     const gameId = id.toString();
     const isPlayer1 = game.p1.toLowerCase() === account?.toLowerCase();
     const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
+    const isAVAXGame = game.paymentType === 1;
     
     return (
       <div key={gameId} className="game-card">
@@ -965,7 +942,7 @@ const RockPaperScissors = ({ onClose }) => {
         
         <div className="game-info">
           <div className="bet-amount">
-            Bet: {formatTokenAmount(game.bet)} tokens
+            Bet: {isAVAXGame ? formatAvaxAmount(game.bet) : formatTokenAmount(game.bet)} {getCurrencySymbol(game.paymentType)}
           </div>
           <div className="players">
             <div className="player">
@@ -984,10 +961,10 @@ const RockPaperScissors = ({ onClose }) => {
         <div className="game-actions">
           {game.state === 0 && account && !isPlayer1 && (
             <div className="join-game">
-              {ethers.utils.parseEther(tokenBalance).gte(game.bet) ? (
+              {(isAVAXGame ? ethers.utils.parseEther(avaxBalance).gte(game.bet) : ethers.utils.parseEther(tokenBalance).gte(game.bet)) ? (
                 <>
                   <div className="choice-prompt">Choose your move:</div>
-                  {renderChoiceSelector((choice) => joinGame(gameId, choice), false, true)}
+                  {renderChoiceSelector((choice) => joinGame(gameId, choice, game), false, true)}
                 </>
               ) : (
                 <div className="insufficient-balance">
@@ -995,9 +972,9 @@ const RockPaperScissors = ({ onClose }) => {
                     Insufficient balance to join this game
                   </div>
                   <div className="balance-requirement">
-                    Required: {formatTokenAmount(game.bet)} tokens
+                    Required: {isAVAXGame ? formatAvaxAmount(game.bet) : formatTokenAmount(game.bet)} {getCurrencySymbol(game.paymentType)}
                     <br />
-                    Your balance: {parseFloat(tokenBalance).toFixed(4)} tokens
+                    Your balance: {isAVAXGame ? formatAvaxAmount(ethers.utils.parseEther(avaxBalance)) : parseFloat(tokenBalance).toFixed(0)} {getCurrencySymbol(game.paymentType)}
                   </div>
                 </div>
               )}
@@ -1025,18 +1002,16 @@ const RockPaperScissors = ({ onClose }) => {
           {game.state === 1 && (
             <div className="auto-resolving">
               <div className="auto-resolve-text">
-                Waiting for game resolution...
+                Waiting for VRF resolution...
               </div>
             </div>
           )}
           
-          {(game.state === 2 || game.state === 3 || game.state === 4) && (
+          {(game.state === 2 || game.state === 3) && (
             <div className="game-finished">
               <div className="finished-text">
                 Game {GAME_STATES[game.state].toLowerCase()}
-                {game.state === 4 && ': Both players refunded (no fee)'}
                 {game.state === 2 && game.winner && `: Winner ${formatAddress(game.winner)}`}
-                {game.autoResolved && " (Auto-resolved)"}
               </div>
             </div>
           )}
@@ -1053,34 +1028,32 @@ const RockPaperScissors = ({ onClose }) => {
           <button 
             className="refresh-btn"
             onClick={async () => {
-              setLoading(true); // Manuel refresh - loading gösterir
+              setLoading(true);
               try {
                 if (account && contract && tokenContract) {
-                  await loadGameData(contract, tokenContract, account, true); // true = loading animation
+                  await loadGameData(contract, tokenContract, account, true);
                 } else {
-                  await loadPublicData(true); // true = loading animation
+                  await loadPublicData(true);
                 }
               } catch (error) {
                 console.error('Refresh failed:', error);
                 setError('Failed to refresh games');
               }
-              // Loading'i burada kapatmıyoruz, loadGameData/loadPublicData içinde kapanacak
             }}
             onTouchEnd={async (e) => {
               e.preventDefault();
               if (!loading) {
-                setLoading(true); // Manuel refresh - loading gösterir
+                setLoading(true);
                 try {
                   if (account && contract && tokenContract) {
-                    await loadGameData(contract, tokenContract, account, true); // true = loading animation
+                    await loadGameData(contract, tokenContract, account, true);
                   } else {
-                    await loadPublicData(true); // true = loading animation
+                    await loadPublicData(true);
                   }
                 } catch (error) {
                   console.error('Refresh failed:', error);
                   setError('Failed to refresh games');
                 }
-                // Loading'i burada kapatmıyoruz, loadGameData/loadPublicData içinde kapanacak
               }
             }}
             disabled={loading}
@@ -1130,7 +1103,27 @@ const RockPaperScissors = ({ onClose }) => {
       
       <div className="create-game-form">
         <div className="form-group">
-          <label>Choose Your Move (Secret):</label>
+          <label>Payment Type:</label>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <button
+              className={`choice-btn ${paymentType === 'ERC20' ? 'selected' : ''}`}
+              onClick={() => setPaymentType('ERC20')}
+              style={{ flex: 1 }}
+            >
+              <span className="choice-name">GOAT Tokens</span>
+            </button>
+            <button
+              className={`choice-btn ${paymentType === 'AVAX' ? 'selected' : ''}`}
+              onClick={() => setPaymentType('AVAX')}
+              style={{ flex: 1 }}
+            >
+              <span className="choice-name">AVAX</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Choose Your Move:</label>
           {renderChoiceSelector(setSelectedChoice)}
           {selectedChoice !== null && (
             <div className="selection-feedback">
@@ -1140,31 +1133,25 @@ const RockPaperScissors = ({ onClose }) => {
         </div>
         
         <div className="form-group">
-          <label>Bet Amount (tokens - Min: 5000):</label>
+          <label>Bet Amount ({paymentType === 'AVAX' ? 'AVAX' : 'tokens'}):</label>
           <input
             type="number"
             value={betAmount}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '' || /^\d+$/.test(value)) {
-                setBetAmount(value);
-              }
-            }}
-            placeholder="Enter bet amount (minimum 5000)"
-            step="1"
-            min="5000"
-            onKeyPress={(e) => {
-              if (e.key === '.' || e.key === ',') {
-                e.preventDefault();
-              }
-            }}
+            onChange={(e) => setBetAmount(e.target.value)}
+            placeholder={`Enter bet amount${paymentType === 'ERC20' && minBetAmount ? ` (minimum ${parseFloat(minBetAmount)})` : ''}`}
+            step="0.001"
+            min={paymentType === 'ERC20' ? minBetAmount : '0.001'}
           />
           <div className="balance-info">
-            Balance: {parseFloat(tokenBalance).toFixed(0)} tokens
-            <br />
-            <span style={{ color: parseInt(betAmount || 0) < 5000 && betAmount ? '#ff4757' : '#a0a0a0' }}>
-              Minimum bet: 5000 tokens (integers only)
-            </span>
+            Balance: {paymentType === 'AVAX' ? parseFloat(avaxBalance).toFixed(4) : parseFloat(tokenBalance).toFixed(0)} {paymentType === 'AVAX' ? 'AVAX' : 'tokens'}
+            {paymentType === 'ERC20' && minBetAmount && (
+              <>
+                <br />
+                <span style={{ color: parseFloat(betAmount || 0) < parseFloat(minBetAmount) && betAmount ? '#ff4757' : '#a0a0a0' }}>
+                  Minimum bet: {parseFloat(minBetAmount)} tokens
+                </span>
+              </>
+            )}
           </div>
         </div>
         
@@ -1174,7 +1161,8 @@ const RockPaperScissors = ({ onClose }) => {
           disabled={
             (selectedChoice !== 0 && !selectedChoice) || 
             !betAmount || 
-            parseInt(betAmount) < 5000 || 
+            (paymentType === 'ERC20' && parseFloat(betAmount) < parseFloat(minBetAmount)) ||
+            (paymentType === 'AVAX' && parseFloat(betAmount) <= 0) ||
             loading || 
             !account || 
             !networkCorrect
@@ -1204,13 +1192,13 @@ const RockPaperScissors = ({ onClose }) => {
             const isPlayer1 = game.p1.toLowerCase() === account?.toLowerCase();
             const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
             const isWinner = game.winner && game.winner.toLowerCase() === account?.toLowerCase();
-            const isTie = game.state === 4;
+            const isTie = game.state === 2 && game.winner === ethers.constants.AddressZero;
             const isInvolved = isPlayer1 || isPlayer2;
             
             return (
               <div key={gameId} className="history-item">
                 <div className="history-header">
-                  <span className="game-id">Game #{gameId} {game.autoResolved && "⚡"}</span>
+                  <span className="game-id">Game #{gameId}</span>
                   <span className={`result ${
                     isTie ? 'tie' : 
                     !isInvolved ? 'neutral' : 
@@ -1222,12 +1210,11 @@ const RockPaperScissors = ({ onClose }) => {
                   </span>
                 </div>
                 <div className="history-details">
-                  <div>Bet: {formatTokenAmount(game.bet)} tokens</div>
+                  <div>Bet: {game.paymentType === 1 ? formatAvaxAmount(game.bet) : formatTokenAmount(game.bet)} {getCurrencySymbol(game.paymentType)}</div>
                   {!isTie && game.winner && <div>Winner: {formatAddress(game.winner)}</div>}
                   {isTie && <div>Result: Both players refunded (no fee)</div>}
                   <div>Players: {formatAddress(game.p1)} vs {formatAddress(game.p2)}</div>
                   {!isInvolved && <div style={{ color: '#f39c12' }}>👁️ You observed this game</div>}
-                  {game.autoResolved && <div style={{ color: '#2ecc71' }}>⚡ Auto-resolved</div>}
                 </div>
               </div>
             );
@@ -1238,7 +1225,6 @@ const RockPaperScissors = ({ onClose }) => {
   );
 
   const renderEnhancedPlayerStats = () => {
-    // Colors for the charts and stats
     const colors = {
       primary: '#FF6B35',
       secondary: '#F7931E',
@@ -1250,19 +1236,16 @@ const RockPaperScissors = ({ onClose }) => {
       light: '#a0a0a0'
     };
 
-    // Calculate win rate
     const winRate = playerStats.played.gt(0) 
       ? ((playerStats.won.toNumber() / playerStats.played.toNumber()) * 100).toFixed(1)
       : 0;
 
-    // Pie chart data
     const gameOutcomeData = [
       { name: 'Won', value: playerStats.won.toNumber(), color: colors.win },
       { name: 'Lost', value: playerStats.played.toNumber() - playerStats.won.toNumber() - playerStats.ties.toNumber(), color: colors.loss },
       { name: 'Tied', value: playerStats.ties.toNumber(), color: colors.tie }
     ];
 
-    // Recent games from finishedGames
     const recentGames = finishedGames ? finishedGames.slice(0, 10) : [];
 
     return (
@@ -1294,30 +1277,6 @@ const RockPaperScissors = ({ onClose }) => {
             <div className="stats-cards">
               <div className="stats-grid">
                 {/* Game Statistics */}
-                <div className="stat-card enhanced">
-                  <div className="stat-icon">🎮</div>
-                  <div className="stat-value">{playerStats.played.toString()}</div>
-                  <div className="stat-label">Games Played</div>
-                  <div className="stat-progress-bar">
-                    <div className="stat-progress" style={{ width: '100%', backgroundColor: colors.primary }}></div>
-                  </div>
-                </div>
-                
-                <div className="stat-card enhanced">
-                  <div className="stat-icon">🏆</div>
-                  <div className="stat-value">{playerStats.won.toString()}</div>
-                  <div className="stat-label">Games Won</div>
-                  <div className="stat-progress-bar">
-                    <div 
-                      className="stat-progress" 
-                      style={{ 
-                        width: `${playerStats.played.gt(0) ? (playerStats.won.toNumber() / playerStats.played.toNumber()) * 100 : 0}%`,
-                        backgroundColor: colors.win 
-                      }}
-                    ></div>
-                  </div>
-                </div>
-                
                 <div className="stat-card enhanced">
                   <div className="stat-icon">🤝</div>
                   <div className="stat-value">{playerStats.ties.toString()}</div>
@@ -1417,16 +1376,14 @@ const RockPaperScissors = ({ onClose }) => {
                 {recentGames.map((gameData) => {
                   const { id, game } = gameData;
                   const gameId = id.toString();
-                  // Filter for user's own games only
                   const isPlayer1 = game.p1.toLowerCase() === account?.toLowerCase();
                   const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
                   const isInvolved = isPlayer1 || isPlayer2;
                   
-                  // Only show games where the user was involved
                   if (!isInvolved) return null;
                   
                   const isWinner = game.winner && game.winner.toLowerCase() === account?.toLowerCase();
-                  const isTie = game.state === 4;
+                  const isTie = game.state === 2 && game.winner === ethers.constants.AddressZero;
                   
                   let resultClass = 'neutral';
                   if (isInvolved) {
@@ -1457,17 +1414,12 @@ const RockPaperScissors = ({ onClose }) => {
                           </div>
                         </div>
                         <div className="recent-game-bet">
-                          Bet: {formatTokenAmount(game.bet)} tokens
+                          Bet: {game.paymentType === 1 ? formatAvaxAmount(game.bet) : formatTokenAmount(game.bet)} {getCurrencySymbol(game.paymentType)}
                         </div>
                         {!isTie && game.winner && (
                           <div className="recent-game-winner">
                             Winner: {formatAddress(game.winner)}
                             {isWinner && <span className="player-you-tag">YOU</span>}
-                          </div>
-                        )}
-                        {game.autoResolved && (
-                          <div className="auto-resolved-tag">
-                            ⚡ Auto Resolved
                           </div>
                         )}
                       </div>
@@ -1621,7 +1573,7 @@ const RockPaperScissors = ({ onClose }) => {
     </div>
   );
 
-  // Main render
+  // Main Render
   return (
     <div className="rps-game-modal">
       <div className="rps-game-content">

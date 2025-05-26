@@ -72,7 +72,7 @@ const TrollPopup = () => {
           </button>
         </div>
 
-        {/* Window Content */}
+        {/* WindowContent */}
         <div className="troll-popup-content">
           <div className="troll-message-area">
             <div className="troll-icon-area">
