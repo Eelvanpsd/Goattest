@@ -109,12 +109,11 @@ const GAME_STATES = {
   3: 'Cancelled'
 };
 
-// Choices
+// Updated Choices - 0 is no longer a valid choice
 const CHOICES = {
-  0: { name: 'Rock', emoji: '🪨', icon: './rock.png' },
-  1: { name: 'Paper', emoji: '📄', icon: './paper.png' },
-  2: { name: 'Scissors', emoji: '✂️', icon: './scissors.png' },
-  3: { name: 'None', emoji: '❓', icon: '❓' }
+  1: { name: 'Rock', emoji: '🪨', icon: './rock.png' },
+  2: { name: 'Paper', emoji: '📄', icon: './paper.png' },
+  3: { name: 'Scissors', emoji: '✂️', icon: './scissors.png' }
 };
 
 // Payment types
@@ -598,7 +597,7 @@ const RockPaperScissors = ({ onClose }) => {
 
   // Create game function (ERC20)
   const createGameERC20 = async () => {
-    if (!selectedChoice && selectedChoice !== 0) {
+    if (!selectedChoice) {
       setError('Please select your move');
       return;
     }
@@ -660,7 +659,7 @@ const RockPaperScissors = ({ onClose }) => {
 
   // Create game function (AVAX)
   const createGameAVAX = async () => {
-    if (!selectedChoice && selectedChoice !== 0) {
+    if (!selectedChoice) {
       setError('Please select your move');
       return;
     }
@@ -850,14 +849,14 @@ const RockPaperScissors = ({ onClose }) => {
                     <span><strong>Your choice:</strong></span>
                     <span className="choice-display">
                       <img src={CHOICES[playerChoice]?.icon} alt={CHOICES[playerChoice]?.name} style={{ width: '24px', height: '24px', marginRight: '8px' }} />
-                      {CHOICES[playerChoice]?.name}
+                      {CHOICES[playerChoice]?.name || 'Unknown'}
                     </span>
                   </div>
                   <div className="choice-row">
                     <span><strong>Opponent's choice:</strong></span>
                     <span className="choice-display">
                       <img src={CHOICES[opponentChoice]?.icon} alt={CHOICES[opponentChoice]?.name} style={{ width: '24px', height: '24px', marginRight: '8px' }} />
-                      {CHOICES[opponentChoice]?.name}
+                      {CHOICES[opponentChoice]?.name || 'Unknown'}
                     </span>
                   </div>
                 </div>
@@ -902,7 +901,7 @@ const RockPaperScissors = ({ onClose }) => {
   // Component render functions
   const renderChoiceSelector = (onSelect, disabled = false, hideSelected = false) => (
     <div className="choice-selector">
-      {[0, 1, 2].map(choice => (
+      {[1, 2, 3].map(choice => (
         <button
           key={choice}
           className={`choice-btn ${!hideSelected && selectedChoice === choice ? 'selected' : ''}`}
@@ -1159,7 +1158,7 @@ const RockPaperScissors = ({ onClose }) => {
           className="create-btn"
           onClick={createGame}
           disabled={
-            (selectedChoice !== 0 && !selectedChoice) || 
+            !selectedChoice || 
             !betAmount || 
             (paymentType === 'ERC20' && parseFloat(betAmount) < parseFloat(minBetAmount)) ||
             (paymentType === 'AVAX' && parseFloat(betAmount) <= 0) ||
@@ -1277,6 +1276,18 @@ const RockPaperScissors = ({ onClose }) => {
             <div className="stats-cards">
               <div className="stats-grid">
                 {/* Game Statistics */}
+                <div className="stat-card enhanced">
+                  <div className="stat-icon">🎮</div>
+                  <div className="stat-value">{playerStats.played.toString()}</div>
+                  <div className="stat-label">Games Played</div>
+                </div>
+                
+                <div className="stat-card enhanced">
+                  <div className="stat-icon">🏆</div>
+                  <div className="stat-value">{playerStats.won.toString()}</div>
+                  <div className="stat-label">Games Won</div>
+                </div>
+                
                 <div className="stat-card enhanced">
                   <div className="stat-icon">🤝</div>
                   <div className="stat-value">{playerStats.ties.toString()}</div>
