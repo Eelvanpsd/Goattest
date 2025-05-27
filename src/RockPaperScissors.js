@@ -465,6 +465,21 @@ const RockPaperScissors = ({ onClose }) => {
       if (networkCorrect) {
         await loadGameData(gameContract, tokenContract, account, false);
         setupEventListeners(gameContract);
+        
+        // MetaMask harici cüzdanlar için otomatik refresh
+        if (!isMetaMask()) {
+          console.log('Non-MetaMask wallet detected, auto-refreshing in 2 seconds...');
+          
+          // 2 saniye sonra refresh yap
+          setTimeout(async () => {
+            try {
+              await loadGameData(gameContract, tokenContract, account, false);
+              console.log('Auto-refresh completed for non-MetaMask wallet');
+            } catch (error) {
+              console.error('Auto-refresh failed:', error);
+            }
+          }, 2000);
+        }
       }
       
     } catch (error) {
