@@ -973,7 +973,7 @@ const RockPaperScissors = ({ onClose }) => {
                   <img src={tiePng} alt="Tie" className="result-image" />
                 </div>
                 <h2>It's a Tie!</h2>
-                <p>Both players chose the same - refund issued</p>
+                <p>Refund issued</p>
               </>
             )}
           </div>
@@ -982,46 +982,22 @@ const RockPaperScissors = ({ onClose }) => {
             <div className="game-info">
               <p><strong>Game #:</strong> {gameId}</p>
               
-              {playerChoice !== undefined && opponentChoice !== undefined && (
-                <div className="choices-display">
-                  <div className="choice-row">
-                    <span><strong>Your choice:</strong></span>
-                    <span className="choice-display">
-                      <img src={CHOICES[playerChoice]?.icon} alt={CHOICES[playerChoice]?.name} style={{ width: '24px', height: '24px', marginRight: '8px' }} />
-                      {CHOICES[playerChoice]?.name || 'Unknown'}
-                    </span>
-                  </div>
-                  <div className="choice-row">
-                    <span><strong>Opponent's choice:</strong></span>
-                    <span className="choice-display">
-                      <img src={CHOICES[opponentChoice]?.icon} alt={CHOICES[opponentChoice]?.name} style={{ width: '24px', height: '24px', marginRight: '8px' }} />
-                      {CHOICES[opponentChoice]?.name || 'Unknown'}
-                    </span>
-                  </div>
-                </div>
-              )}
-              
               {result === 'tie' && refundAmount && (
                 <p className="refund-highlight">
-                  <strong>Refunded:</strong> Full amount (no fee on ties)
+                  <strong>Refunded:</strong> {formatTokenAmount(refundAmount)} GOAT
                 </p>
               )}
               
-              {winner && <p><strong>Winner:</strong> {formatAddress(winner)}</p>}
-              {winnings && (
-                <>
-                  <p><strong>Total Prize:</strong> {formatTokenAmount(winnings)}</p>
-                  {result === 'won' && betAmount && (
-                    <p className="profit-highlight">
-                      <strong>Your Profit:</strong> +{formatTokenAmount(winnings.sub(betAmount))}
-                    </p>
-                  )}
-                  {result === 'lost' && betAmount && (
-                    <p className="loss-highlight">
-                      <strong>Your Loss:</strong> -{formatTokenAmount(betAmount)}
-                    </p>
-                  )}
-                </>
+              {result === 'won' && winnings && (
+                <p className="profit-highlight">
+                  <strong>You Won:</strong> {formatTokenAmount(winnings)} GOAT
+                </p>
+              )}
+              
+              {result === 'lost' && betAmount && (
+                <p className="loss-highlight">
+                  <strong>You Lost:</strong> {formatTokenAmount(betAmount)} GOAT
+                </p>
               )}
             </div>
           </div>
