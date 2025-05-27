@@ -122,6 +122,9 @@ const PAYMENT_TYPES = {
   1: 'AVAX'
 };
 
+// Popup storage key
+const POPUP_STORAGE_KEY = 'rps_pending_popups';
+
 const RockPaperScissors = ({ onClose }) => {
   // State management
   const [account, setAccount] = useState(null);
@@ -357,17 +360,55 @@ const RockPaperScissors = ({ onClose }) => {
     }
   }, [account]);
 
-  // Global GameResolved event listener for popup notifications
+  // Component mount olduğunda pending popup'ları kontrol et
   useEffect(() => {
-    if (!contract || !account) return;
+    try {
+      const pendingPopups = JSON.parse(sessionStorage.getItem(POPUP_STORAGE_KEY) || '[]');
+      const now = Date.now();
+      
+      // 1 dakikadan yeni popup'ları göster
+      const recentPopups = pendingPopups.filter(popup => now - popup.timestamp < 60000);
+      
+      if (recentPopups.length > 0) {
+        // En son popup'ı göster
+        const latestPopup = recentPopups[recentPopups.length - 1];
+        setGameResultPopup(latestPopup);
+        
+        // Gösterilen popup'ları temizle
+        sessionStorage.setItem(POPUP_STORAGE_KEY, '[]');
+      }
+    } catch (error) {
+      console.error('Error checking pending popups:', error);
+    }
+  }, []);
 
-    const handleGameResolved = async (gameId, winner, winnings, isTie) => {
+  // Auto-close popup after 30 seconds
+  useEffect(() => {
+    if (gameResultPopup) {
+      const timer = setTimeout(() => {
+        setGameResultPopup(null);
+      }, 30000); // 30 saniye sonra otomatik kapat
+      
+      return () => clearTimeout(timer);
+    }
+  }, [gameResultPopup]);
+
+  // Global GameResolved event listener for popup notifications - UPDATED
+  useEffect(() => {
+    if (!contract || !account || !provider) return;
+
+    let eventListenerActive = true;
+
+    const handleGameResolved = async (gameId, winner, winnings, isTie, event) => {
+      if (!eventListenerActive) return;
+      
       try {
         console.log('GameResolved Event Detected:', {
           gameId: gameId.toString(),
           winner,
           winnings: winnings.toString(),
-          isTie
+          isTie,
+          blockNumber: event?.blockNumber
         });
 
         // Get game details
@@ -396,23 +437,42 @@ const RockPaperScissors = ({ onClose }) => {
           isAVAXGame: isAVAXGame,
           playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
           opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
+          timestamp: Date.now()
         };
         
         if (isTie) {
-          setGameResultPopup({
+          const finalPopupData = {
             ...popupData,
             result: 'tie',
             refundAmount: gameDetails.bet,
-          });
+          };
+          setGameResultPopup(finalPopupData);
+          // Save to session storage
+          try {
+            const pendingPopups = JSON.parse(sessionStorage.getItem(POPUP_STORAGE_KEY) || '[]');
+            pendingPopups.push(finalPopupData);
+            sessionStorage.setItem(POPUP_STORAGE_KEY, JSON.stringify(pendingPopups));
+          } catch (error) {
+            console.error('Error saving popup to storage:', error);
+          }
         } else {
           const isWinner = winner.toLowerCase() === userAddr;
-          setGameResultPopup({
+          const finalPopupData = {
             ...popupData,
             winner: winner,
             winnings: winnings,
             isWinner: isWinner,
             result: isWinner ? 'won' : 'lost',
-          });
+          };
+          setGameResultPopup(finalPopupData);
+          // Save to session storage
+          try {
+            const pendingPopups = JSON.parse(sessionStorage.getItem(POPUP_STORAGE_KEY) || '[]');
+            pendingPopups.push(finalPopupData);
+            sessionStorage.setItem(POPUP_STORAGE_KEY, JSON.stringify(pendingPopups));
+          } catch (error) {
+            console.error('Error saving popup to storage:', error);
+          }
         }
 
         // Auto refresh after showing popup
@@ -433,12 +493,58 @@ const RockPaperScissors = ({ onClose }) => {
     contract.on('GameResolved', handleGameResolved);
     console.log('GameResolved event listener attached');
 
+    // Check for recent GameResolved events (last 20 blocks)
+    const checkRecentEvents = async () => {
+      try {
+        const currentBlock = await provider.getBlockNumber();
+        const fromBlock = Math.max(0, currentBlock - 20);
+        
+        // Get recent GameResolved events
+        const filter = contract.filters.GameResolved();
+        const events = await contract.queryFilter(filter, fromBlock, currentBlock);
+        
+        console.log(`Found ${events.length} recent GameResolved events`);
+        
+        // Get user's active games
+        const playerActiveGames = await contract.getPlayerActiveGames(account);
+        
+        for (const event of events) {
+          const { gameId, winner, winnings, isTie } = event.args;
+          
+          // Check if this game was recently resolved and user was involved
+          const [gameDetails] = await contract.getGame(gameId);
+          const userAddr = account.toLowerCase();
+          const isPlayer1 = gameDetails.p1.toLowerCase() === userAddr;
+          const isPlayer2 = gameDetails.p2.toLowerCase() === userAddr;
+          const isInvolved = isPlayer1 || isPlayer2;
+          
+          if (isInvolved && gameDetails.state === 2) {
+            // Check if this game was resolved in the last 30 seconds
+            const block = await provider.getBlock(event.blockNumber);
+            const timeSinceResolved = Date.now() / 1000 - block.timestamp;
+            
+            if (timeSinceResolved < 30) {
+              console.log(`Recent game resolved for user: Game #${gameId.toString()}`);
+              await handleGameResolved(gameId, winner, winnings, isTie, event);
+              break; // Show only one popup at a time
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking recent events:', error);
+      }
+    };
+
+    // Check recent events on mount
+    checkRecentEvents();
+
     // Cleanup
     return () => {
+      eventListenerActive = false;
       contract.off('GameResolved', handleGameResolved);
       console.log('GameResolved event listener removed');
     };
-  }, [contract, account, tokenContract]);
+  }, [contract, account, provider, tokenContract]);
 
   // Load public data (all active games) even without wallet connection
   const loadPublicData = async (showLoading = false) => {
@@ -631,14 +737,14 @@ const RockPaperScissors = ({ onClose }) => {
     }
   }, [contract, tokenContract, account, networkCorrect]);
 
-  // Event listener setup
+  // Event listener setup - UPDATED (removed GameResolved from here)
   const setupEventListeners = (gameContract) => {
     const events = [
       'GameCreated',
       'GameJoined', 
-      'GameResolved',
       'GameCancelled',
       'VRFRequested'
+      // GameResolved removed - handled by global listener
     ];
     
     const autoRefresh = async (delay = 2000) => {
@@ -669,12 +775,9 @@ const RockPaperScissors = ({ onClose }) => {
         
         if (eventName === 'VRFRequested') {
           autoRefresh(1000);
-        }
-        
-        // Handle resolved games - just refresh, popup is handled by global listener
-        if (eventName === 'GameResolved') {
-          console.log('GameResolved event in setupEventListeners');
-          autoRefresh(2000);
+          // VRF request sonrası GameResolved'ı dinlemeye başla
+          const gameId = args[0];
+          console.log(`VRF requested for game ${gameId.toString()}, preparing for resolution...`);
         }
       };
       
@@ -756,7 +859,7 @@ const RockPaperScissors = ({ onClose }) => {
     }
   };
 
-  // Create game function (ERC20)
+  // Create game function (ERC20) - UPDATED
   const createGameERC20 = async () => {
     if (!selectedChoice) {
       setError('Please select your move');
@@ -829,7 +932,24 @@ const RockPaperScissors = ({ onClose }) => {
         tx = await contract.createGameERC20(betWei, selectedChoice);
       }
       
-      await tx.wait();
+      const receipt = await tx.wait();
+      
+      // Transaction receipt'ten gameId'yi al
+      const gameCreatedEvent = receipt.events?.find(e => e.event === 'GameCreated');
+      if (gameCreatedEvent) {
+        const gameId = gameCreatedEvent.args.id;
+        console.log(`Game created with ID: ${gameId.toString()}`);
+        
+        // Bu oyun için özel bir listener ekle
+        const gameResolvedFilter = contract.filters.GameResolved(gameId);
+        const handleThisGameResolved = (id, winner, winnings, isTie) => {
+          if (id.toString() === gameId.toString()) {
+            console.log(`Game ${gameId.toString()} resolved!`);
+            contract.off(gameResolvedFilter, handleThisGameResolved);
+          }
+        };
+        contract.on(gameResolvedFilter, handleThisGameResolved);
+      }
       
       setSelectedChoice(null);
       setBetAmount('');
@@ -845,7 +965,7 @@ const RockPaperScissors = ({ onClose }) => {
     }
   };
 
-  // Create game function (AVAX)
+  // Create game function (AVAX) - UPDATED
   const createGameAVAX = async () => {
     if (!selectedChoice) {
       setError('Please select your move');
@@ -897,7 +1017,24 @@ const RockPaperScissors = ({ onClose }) => {
         tx = await contract.createGameAVAX(selectedChoice, { value: betWei });
       }
       
-      await tx.wait();
+      const receipt = await tx.wait();
+      
+      // Transaction receipt'ten gameId'yi al
+      const gameCreatedEvent = receipt.events?.find(e => e.event === 'GameCreated');
+      if (gameCreatedEvent) {
+        const gameId = gameCreatedEvent.args.id;
+        console.log(`Game created with ID: ${gameId.toString()}`);
+        
+        // Bu oyun için özel bir listener ekle
+        const gameResolvedFilter = contract.filters.GameResolved(gameId);
+        const handleThisGameResolved = (id, winner, winnings, isTie) => {
+          if (id.toString() === gameId.toString()) {
+            console.log(`Game ${gameId.toString()} resolved!`);
+            contract.off(gameResolvedFilter, handleThisGameResolved);
+          }
+        };
+        contract.on(gameResolvedFilter, handleThisGameResolved);
+      }
       
       setSelectedChoice(null);
       setBetAmount('');
@@ -1156,7 +1293,11 @@ const RockPaperScissors = ({ onClose }) => {
           
           <button 
             className="close-popup-btn"
-            onClick={() => setGameResultPopup(null)}
+            onClick={() => {
+              setGameResultPopup(null);
+              // Clear from session storage
+              sessionStorage.setItem(POPUP_STORAGE_KEY, '[]');
+            }}
           >
             Close
           </button>
