@@ -523,6 +523,8 @@ const RockPaperScissors = ({ onClose }) => {
               const isInvolved = isPlayer1 || isPlayer2;
               
               if (isInvolved) {
+                const isAVAXGame = gameDetails.paymentType === 1;
+                
                 if (isTie) {
                   setGameResultPopup({
                     gameId: gameIdStr,
@@ -530,7 +532,8 @@ const RockPaperScissors = ({ onClose }) => {
                     refundAmount: gameDetails.bet,
                     playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
                     opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
-                    betAmount: gameDetails.bet
+                    betAmount: gameDetails.bet,
+                    isAVAXGame: isAVAXGame
                   });
                 } else {
                   const isWinner = winnerAddr === userAddr;
@@ -543,7 +546,8 @@ const RockPaperScissors = ({ onClose }) => {
                     result: isWinner ? 'won' : 'lost',
                     playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
                     opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
-                    betAmount: gameDetails.bet
+                    betAmount: gameDetails.bet,
+                    isAVAXGame: isAVAXGame
                   });
                 }
               }
