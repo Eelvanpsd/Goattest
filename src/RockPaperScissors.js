@@ -557,18 +557,30 @@ const RockPaperScissors = ({ onClose }) => {
         if (eventName === 'GameResolved') {
           const [gameId, winner, winnings, isTie] = args;
           const gameIdStr = gameId.toString();
-          const winnerAddr = winner.toLowerCase();
-          const userAddr = account?.toLowerCase();
           
+          // Hemen game detaylarını al
           setTimeout(async () => {
             try {
               const [gameDetails] = await gameContract.getGame(gameId);
+              
+              // Kullanıcının oyunda olup olmadığını kontrol et
+              const userAddr = account?.toLowerCase();
               const isPlayer1 = gameDetails.p1.toLowerCase() === userAddr;
               const isPlayer2 = gameDetails.p2.toLowerCase() === userAddr;
               const isInvolved = isPlayer1 || isPlayer2;
               
-              if (isInvolved) {
+              console.log('GameResolved - Check involvement:', {
+                gameId: gameIdStr,
+                userAddr,
+                p1: gameDetails.p1.toLowerCase(),
+                p2: gameDetails.p2.toLowerCase(),
+                isInvolved,
+                isTie
+              });
+              
+              if (isInvolved && gameDetails.state === 2) { // state 2 = Done
                 const isAVAXGame = gameDetails.paymentType === 1;
+                const winnerAddr = winner.toLowerCase();
                 
                 if (isTie) {
                   setGameResultPopup({
@@ -580,6 +592,8 @@ const RockPaperScissors = ({ onClose }) => {
                     betAmount: gameDetails.bet,
                     isAVAXGame: isAVAXGame
                   });
+                  
+                  console.log('Showing TIE popup for game:', gameIdStr);
                 } else {
                   const isWinner = winnerAddr === userAddr;
                   
@@ -594,12 +608,14 @@ const RockPaperScissors = ({ onClose }) => {
                     betAmount: gameDetails.bet,
                     isAVAXGame: isAVAXGame
                   });
+                  
+                  console.log(`Showing ${isWinner ? 'WIN' : 'LOSE'} popup for game:`, gameIdStr);
                 }
               }
             } catch (error) {
               console.error('Error fetching game details for popup:', error);
             }
-          }, 1000);
+          }, 500); // 500ms gecikme (1000ms yerine)
           
           autoRefresh(2000);
         }
@@ -756,6 +772,49 @@ const RockPaperScissors = ({ onClose }) => {
       }
       
       await tx.wait();
+
+      await tx.wait();
+
+// Oyun join edildikten sonra GameResolved event'ini dinle
+const checkGameResolution = setInterval(async () => {
+  try {
+    const [updatedGame] = await contract.getGame(gameId);
+    
+    if (updatedGame.state === 2) { // Oyun bitti
+      clearInterval(checkGameResolution);
+      
+      const userAddr = account.toLowerCase();
+      const isPlayer1 = updatedGame.p1.toLowerCase() === userAddr;
+      const isPlayer2 = updatedGame.p2.toLowerCase() === userAddr;
+      
+      if (isPlayer1 || isPlayer2) {
+        const isTie = updatedGame.winner === ethers.constants.AddressZero;
+        const isWinner = !isTie && updatedGame.winner.toLowerCase() === userAddr;
+        
+        // Popup'ı göster
+        setGameResultPopup({
+          gameId: gameId.toString(),
+          result: isTie ? 'tie' : (isWinner ? 'won' : 'lost'),
+          refundAmount: isTie ? updatedGame.bet : undefined,
+          winner: !isTie ? updatedGame.winner : undefined,
+          winnings: !isTie ? updatedGame.bet.mul(2).mul(95).div(100) : undefined,
+          isWinner: isWinner,
+          playerChoice: isPlayer1 ? updatedGame.p1Choice : updatedGame.p2Choice,
+          opponentChoice: isPlayer1 ? updatedGame.p2Choice : updatedGame.p1Choice,
+          betAmount: updatedGame.bet,
+          isAVAXGame: updatedGame.paymentType === 1
+        });
+        
+        console.log('Game resolved, showing popup for joined game');
+      }
+    }
+  } catch (error) {
+    console.error('Error checking game resolution:', error);
+  }
+}, 2000); // Her 2 saniyede kontrol et
+
+// 30 saniye sonra kontrolü durdur
+setTimeout(() => clearInterval(checkGameResolution), 30000);
       
       setSelectedChoice(null);
       setBetAmount('');
@@ -1445,45 +1504,49 @@ const RockPaperScissors = ({ onClose }) => {
       let ties = 0;
       let totalBet = ethers.BigNumber.from(0);
       let totalWinnings = ethers.BigNumber.from(0);
-
+    
       filteredFinishedGames.forEach(gameData => {
         const { game } = gameData;
         const isPlayer1 = game.p1.toLowerCase() === account?.toLowerCase();
         const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
-        const isWinner = game.winner && game.winner.toLowerCase() === account?.toLowerCase();
-        const isTie = game.state === 2 && game.winner === ethers.constants.AddressZero;
+        
+        // Tie kontrolü - winner adresi 0x0000... ise tie'dır
+        const isTie = game.winner === ethers.constants.AddressZero || 
+                      game.winner === '0x0000000000000000000000000000000000000000';
+        
+        const isWinner = !isTie && game.winner && game.winner.toLowerCase() === account?.toLowerCase();
         
         played++;
         
         if (isTie) {
           ties++;
-          // In ties, players get their bet back
+          // Tie durumunda oyuncular bahislerini geri alır
           totalWinnings = totalWinnings.add(game.bet);
         } else if (isWinner) {
           won++;
-          // Winner gets double the bet minus house fee
-          const houseFee = game.bet.mul(5).div(100); // Assuming 5% house fee
+          // Kazanan durumunda
+          const houseFee = game.bet.mul(5).div(100); // %5 house fee varsayımı
           const winAmount = game.bet.mul(2).sub(houseFee);
           totalWinnings = totalWinnings.add(winAmount);
         }
+        // Kaybeden durumunda totalWinnings'e bir şey eklenmez
         
         totalBet = totalBet.add(game.bet);
       });
-
+    
       return { played, won, ties, totalBet, totalWinnings };
     };
-
     const filteredStats = calculateFilteredStats();
 
     const winRate = filteredStats.played > 0 
       ? ((filteredStats.won / filteredStats.played) * 100).toFixed(1)
       : 0;
 
-    const gameOutcomeData = [
-      { name: 'Won', value: filteredStats.won || 0, color: colors.win },
-      { name: 'Lost', value: (filteredStats.played || 0) - (filteredStats.won || 0) - (filteredStats.ties || 0), color: colors.loss },
-      { name: 'Tied', value: filteredStats.ties || 0, color: colors.tie }
-    ];
+      const gameOutcomeData = [
+        { name: 'Won', value: filteredStats.won || 0, color: colors.win },
+        { name: 'Lost', value: Math.max(0, (filteredStats.played || 0) - (filteredStats.won || 0) - (filteredStats.ties || 0)), color: colors.loss },
+        { name: 'Tied', value: filteredStats.ties || 0, color: colors.tie }
+      ];
 
     const recentGames = filteredFinishedGames.slice(0, 10);
 
@@ -1663,7 +1726,8 @@ const RockPaperScissors = ({ onClose }) => {
                   if (!isInvolved) return null;
                   
                   const isWinner = game.winner && game.winner.toLowerCase() === account?.toLowerCase();
-                  const isTie = game.state === 2 && game.winner === ethers.constants.AddressZero;
+                  const isTie = game.winner === ethers.constants.AddressZero || 
+                  game.winner === '0x0000000000000000000000000000000000000000';
                   
                   let resultClass = 'neutral';
                   if (isInvolved) {
