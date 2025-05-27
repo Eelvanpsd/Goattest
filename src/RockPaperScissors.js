@@ -557,30 +557,18 @@ const RockPaperScissors = ({ onClose }) => {
         if (eventName === 'GameResolved') {
           const [gameId, winner, winnings, isTie] = args;
           const gameIdStr = gameId.toString();
+          const winnerAddr = winner.toLowerCase();
+          const userAddr = account?.toLowerCase();
           
-          // Hemen game detaylarını al
           setTimeout(async () => {
             try {
               const [gameDetails] = await gameContract.getGame(gameId);
-              
-              // Kullanıcının oyunda olup olmadığını kontrol et
-              const userAddr = account?.toLowerCase();
               const isPlayer1 = gameDetails.p1.toLowerCase() === userAddr;
               const isPlayer2 = gameDetails.p2.toLowerCase() === userAddr;
               const isInvolved = isPlayer1 || isPlayer2;
               
-              console.log('GameResolved - Check involvement:', {
-                gameId: gameIdStr,
-                userAddr,
-                p1: gameDetails.p1.toLowerCase(),
-                p2: gameDetails.p2.toLowerCase(),
-                isInvolved,
-                isTie
-              });
-              
-              if (isInvolved && gameDetails.state === 2) { // state 2 = Done
+              if (isInvolved) {
                 const isAVAXGame = gameDetails.paymentType === 1;
-                const winnerAddr = winner.toLowerCase();
                 
                 if (isTie) {
                   setGameResultPopup({
@@ -592,8 +580,6 @@ const RockPaperScissors = ({ onClose }) => {
                     betAmount: gameDetails.bet,
                     isAVAXGame: isAVAXGame
                   });
-                  
-                  console.log('Showing TIE popup for game:', gameIdStr);
                 } else {
                   const isWinner = winnerAddr === userAddr;
                   
@@ -608,14 +594,12 @@ const RockPaperScissors = ({ onClose }) => {
                     betAmount: gameDetails.bet,
                     isAVAXGame: isAVAXGame
                   });
-                  
-                  console.log(`Showing ${isWinner ? 'WIN' : 'LOSE'} popup for game:`, gameIdStr);
                 }
               }
             } catch (error) {
               console.error('Error fetching game details for popup:', error);
             }
-          }, 500); // 500ms gecikme (1000ms yerine)
+          }, 1000);
           
           autoRefresh(2000);
         }
@@ -772,42 +756,6 @@ const RockPaperScissors = ({ onClose }) => {
       }
       
       await tx.wait();
-
-      // ↓ Kurucu için oyun bitişini dinleyip pop-up göster ↓
-// (Son yaratılan ID'yi alıyoruz)
-const newGameId = (await contract.gameId()).toString();
-
-const checkCreatorResolution = setInterval(async () => {
-  try {
-    const [updatedGame] = await contract.getGame(newGameId);
-    if (updatedGame.state === 2) {  // Oyun bitti
-      clearInterval(checkCreatorResolution);
-
-      const userAddr  = account.toLowerCase();
-      // Kurucu her zaman p1’dir:
-      const isTie     = updatedGame.winner === ethers.constants.AddressZero;
-      const isWinner  = !isTie && updatedGame.winner.toLowerCase() === userAddr;
-
-      setGameResultPopup({
-        gameId:        newGameId,
-        result:        isTie ? 'tie' : (isWinner ? 'won' : 'lost'),
-        refundAmount:  isTie ? updatedGame.bet : undefined,
-        winner:        !isTie ? updatedGame.winner : undefined,
-        winnings:      !isTie ? updatedGame.bet.mul(2).mul(95).div(100) : undefined,
-        playerChoice:   updatedGame.p1Choice,
-        opponentChoice: updatedGame.p2Choice,
-        betAmount:      updatedGame.bet,
-        isAVAXGame:     false
-      });
-    }
-  } catch (err) {
-    console.error('Creator resolution error:', err);
-  }
-}, 2000);
-// 30 saniye sonra otomatik durdur
-setTimeout(() => clearInterval(checkCreatorResolution), 30000);
-// ↑ Kurucu için polling bloğu ↑
-
       
       setSelectedChoice(null);
       setBetAmount('');
@@ -872,39 +820,6 @@ setTimeout(() => clearInterval(checkCreatorResolution), 30000);
       }
       
       await tx.wait();
-
-      // ↓ Kurucu için AVAX oyunu bitişini dinleyip pop-up göster ↓
-const newGameId = (await contract.gameId()).toString();
-
-const checkCreatorResolutionAvax = setInterval(async () => {
-  try {
-    const [updatedGame] = await contract.getGame(newGameId);
-    if (updatedGame.state === 2) {
-      clearInterval(checkCreatorResolutionAvax);
-
-      const userAddr  = account.toLowerCase();
-      const isTie     = updatedGame.winner === ethers.constants.AddressZero;
-      const isWinner  = !isTie && updatedGame.winner.toLowerCase() === userAddr;
-
-      setGameResultPopup({
-        gameId:        newGameId,
-        result:        isTie ? 'tie' : (isWinner ? 'won' : 'lost'),
-        refundAmount:  isTie ? updatedGame.bet : undefined,
-        winner:        !isTie ? updatedGame.winner : undefined,
-        winnings:      !isTie ? updatedGame.bet.mul(2).mul(95).div(100) : undefined,
-        playerChoice:   updatedGame.p1Choice,
-        opponentChoice: updatedGame.p2Choice,
-        betAmount:      updatedGame.bet,
-        isAVAXGame:     true
-      });
-    }
-  } catch (err) {
-    console.error('Creator AVAX resolution error:', err);
-  }
-}, 2000);
-setTimeout(() => clearInterval(checkCreatorResolutionAvax), 30000);
-// ↑ AVAX kurucu için polling ↑
-
       
       setSelectedChoice(null);
       setBetAmount('');
@@ -983,49 +898,6 @@ setTimeout(() => clearInterval(checkCreatorResolutionAvax), 30000);
         
         if (tx) {
           await tx.wait();
-          await tx.wait();
-
-          // Oyun join edildikten sonra GameResolved event'ini dinle
-          const checkGameResolution = setInterval(async () => {
-            try {
-              const [updatedGame] = await contract.getGame(gameId);
-              
-              if (updatedGame.state === 2) { // Oyun bitti
-                clearInterval(checkGameResolution);
-                
-                const userAddr = account.toLowerCase();
-                const isPlayer1 = updatedGame.p1.toLowerCase() === userAddr;
-                const isPlayer2 = updatedGame.p2.toLowerCase() === userAddr;
-                
-                if (isPlayer1 || isPlayer2) {
-                  const isTie = updatedGame.winner === ethers.constants.AddressZero;
-                  const isWinner = !isTie && updatedGame.winner.toLowerCase() === userAddr;
-                  
-                  // Popup'ı göster
-                  setGameResultPopup({
-                    gameId: gameId.toString(),
-                    result: isTie ? 'tie' : (isWinner ? 'won' : 'lost'),
-                    refundAmount: isTie ? updatedGame.bet : undefined,
-                    winner: !isTie ? updatedGame.winner : undefined,
-                    winnings: !isTie ? updatedGame.bet.mul(2).mul(95).div(100) : undefined,
-                    isWinner: isWinner,
-                    playerChoice: isPlayer1 ? updatedGame.p1Choice : updatedGame.p2Choice,
-                    opponentChoice: isPlayer1 ? updatedGame.p2Choice : updatedGame.p1Choice,
-                    betAmount: updatedGame.bet,
-                    isAVAXGame: updatedGame.paymentType === 1
-                  });
-                  
-                  console.log('Game resolved, showing popup for joined game');
-                }
-              }
-            } catch (error) {
-              console.error('Error checking game resolution:', error);
-            }
-          }, 2000); // Her 2 saniyede kontrol et
-          
-          // 30 saniye sonra kontrolü durdur
-          setTimeout(() => clearInterval(checkGameResolution), 30000);
-
         }
       } else {
         // Join with ERC20 tokens
@@ -1089,48 +961,6 @@ setTimeout(() => clearInterval(checkCreatorResolutionAvax), 30000);
         
         if (tx) {
           await tx.wait();
-// ↓ ERC20 için oyun bitişini dinleyip pop-up göstermek ↓
-if (tx) {
-  await tx.wait();
-
-  const checkGameResolution = setInterval(async () => {
-    try {
-      const [updatedGame] = await contract.getGame(gameId);
-      if (updatedGame.state === 2) { // Oyun bitti
-        clearInterval(checkGameResolution);
-
-        const userAddr   = account.toLowerCase();
-        const isPlayer1  = updatedGame.p1.toLowerCase() === userAddr;
-        const isPlayer2  = updatedGame.p2.toLowerCase() === userAddr;
-        const isInvolved = isPlayer1 || isPlayer2;
-        if (!isInvolved) return;
-
-        const isTie    = updatedGame.winner === ethers.constants.AddressZero;
-        const isWinner = !isTie && updatedGame.winner.toLowerCase() === userAddr;
-
-        setGameResultPopup({
-          gameId:      gameId.toString(),
-          result:      isTie ? 'tie' : (isWinner ? 'won' : 'lost'),
-          refundAmount: isTie ? updatedGame.bet : undefined,
-          winner:      !isTie ? updatedGame.winner : undefined,
-          winnings:    !isTie ? updatedGame.bet.mul(2).mul(95).div(100) : undefined,
-          playerChoice:   isPlayer1 ? updatedGame.p1Choice : updatedGame.p2Choice,
-          opponentChoice: isPlayer1 ? updatedGame.p2Choice : updatedGame.p1Choice,
-          betAmount:      updatedGame.bet,
-          isAVAXGame:     false
-        });
-      }
-    } catch (err) {
-      console.error('ERC20 resolution check error:', err);
-    }
-  }, 2000);  // Her 2 saniyede kontrol et
-
-  // 30 saniye sonra dinlemeyi durdur
-  setTimeout(() => clearInterval(checkGameResolution), 30000);
-}
-// ↑ ERC20 için oyun bitişini dinleyip pop-up göstermek ↑
-
-
         }
       }
       
