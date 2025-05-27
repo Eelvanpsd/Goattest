@@ -357,6 +357,89 @@ const RockPaperScissors = ({ onClose }) => {
     }
   }, [account]);
 
+  // Global GameResolved event listener for popup notifications
+  useEffect(() => {
+    if (!contract || !account) return;
+
+    const handleGameResolved = async (gameId, winner, winnings, isTie) => {
+      try {
+        console.log('GameResolved Event Detected:', {
+          gameId: gameId.toString(),
+          winner,
+          winnings: winnings.toString(),
+          isTie
+        });
+
+        // Get game details
+        const [gameDetails] = await contract.getGame(gameId);
+        
+        // Check if current user is involved
+        const userAddr = account.toLowerCase();
+        const isPlayer1 = gameDetails.p1.toLowerCase() === userAddr;
+        const isPlayer2 = gameDetails.p2.toLowerCase() === userAddr;
+        const isInvolved = isPlayer1 || isPlayer2;
+        
+        if (!isInvolved) {
+          console.log('User not involved in this game');
+          return;
+        }
+
+        console.log('User is involved, showing popup...');
+        
+        const gameIdStr = gameId.toString();
+        const isAVAXGame = gameDetails.paymentType === 1;
+        
+        // Create popup data
+        const popupData = {
+          gameId: gameIdStr,
+          betAmount: gameDetails.bet,
+          isAVAXGame: isAVAXGame,
+          playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
+          opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
+        };
+        
+        if (isTie) {
+          setGameResultPopup({
+            ...popupData,
+            result: 'tie',
+            refundAmount: gameDetails.bet,
+          });
+        } else {
+          const isWinner = winner.toLowerCase() === userAddr;
+          setGameResultPopup({
+            ...popupData,
+            winner: winner,
+            winnings: winnings,
+            isWinner: isWinner,
+            result: isWinner ? 'won' : 'lost',
+          });
+        }
+
+        // Auto refresh after showing popup
+        setTimeout(async () => {
+          try {
+            await loadGameData(contract, tokenContract, account, false);
+          } catch (error) {
+            console.error('Auto refresh after game resolved failed:', error);
+          }
+        }, 2000);
+        
+      } catch (error) {
+        console.error('Error handling GameResolved event:', error);
+      }
+    };
+
+    // Subscribe to GameResolved events
+    contract.on('GameResolved', handleGameResolved);
+    console.log('GameResolved event listener attached');
+
+    // Cleanup
+    return () => {
+      contract.off('GameResolved', handleGameResolved);
+      console.log('GameResolved event listener removed');
+    };
+  }, [contract, account, tokenContract]);
+
   // Load public data (all active games) even without wallet connection
   const loadPublicData = async (showLoading = false) => {
     try {
@@ -588,54 +671,9 @@ const RockPaperScissors = ({ onClose }) => {
           autoRefresh(1000);
         }
         
-        // Handle resolved games
+        // Handle resolved games - just refresh, popup is handled by global listener
         if (eventName === 'GameResolved') {
-          const [gameId, winner, winnings, isTie] = args;
-          const gameIdStr = gameId.toString();
-          const winnerAddr = winner.toLowerCase();
-          const userAddr = account?.toLowerCase();
-          
-          setTimeout(async () => {
-            try {
-              const [gameDetails] = await gameContract.getGame(gameId);
-              const isPlayer1 = gameDetails.p1.toLowerCase() === userAddr;
-              const isPlayer2 = gameDetails.p2.toLowerCase() === userAddr;
-              const isInvolved = isPlayer1 || isPlayer2;
-              
-              if (isInvolved) {
-                const isAVAXGame = gameDetails.paymentType === 1;
-                
-                if (isTie) {
-                  setGameResultPopup({
-                    gameId: gameIdStr,
-                    result: 'tie',
-                    refundAmount: gameDetails.bet,
-                    playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
-                    opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
-                    betAmount: gameDetails.bet,
-                    isAVAXGame: isAVAXGame
-                  });
-                } else {
-                  const isWinner = winnerAddr === userAddr;
-                  
-                  setGameResultPopup({
-                    gameId: gameIdStr,
-                    winner: winner,
-                    winnings: winnings,
-                    isWinner: isWinner,
-                    result: isWinner ? 'won' : 'lost',
-                    playerChoice: isPlayer1 ? gameDetails.p1Choice : gameDetails.p2Choice,
-                    opponentChoice: isPlayer1 ? gameDetails.p2Choice : gameDetails.p1Choice,
-                    betAmount: gameDetails.bet,
-                    isAVAXGame: isAVAXGame
-                  });
-                }
-              }
-            } catch (error) {
-              console.error('Error fetching game details for popup:', error);
-            }
-          }, 1000);
-          
+          console.log('GameResolved event in setupEventListeners');
           autoRefresh(2000);
         }
       };
@@ -647,6 +685,7 @@ const RockPaperScissors = ({ onClose }) => {
 
   // Load game data
   const loadGameData = async (gameContract, tokenContract, userAccount, showLoading = false) => {
+    console.log('Loading game data...', { showLoading, userAccount });
     try {
       if (showLoading) {
         setLoading(true);
@@ -1965,10 +2004,10 @@ const RockPaperScissors = ({ onClose }) => {
             )}
             <button 
               className="close-btn" 
-              onClick={onClose}
+              onClick={handleClose}
               onTouchEnd={(e) => {
                 e.preventDefault();
-                onClose();
+                handleClose();
               }}
               style={{ touchAction: 'manipulation' }}
               title="Close (ESC)"
