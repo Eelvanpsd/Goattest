@@ -153,7 +153,7 @@ const RockPaperScissors = ({ onClose }) => {
   // Enhanced statistics state
   const [activeStatsSection, setActiveStatsSection] = useState('summary');
   const [winRateHistory, setWinRateHistory] = useState([]);
-  const [statsFilter, setStatsFilter] = useState('all'); // 'all', 'erc20', 'avax'
+  const [statsFilter, setStatsFilter] = useState('erc20'); // 'erc20', 'avax'
 
   // Mobile-specific state
   const [isMobile, setIsMobile] = useState(false);
@@ -610,7 +610,7 @@ const RockPaperScissors = ({ onClose }) => {
     
     const minBetFloat = parseFloat(minBetAmount);
     if (parseFloat(betAmount) < minBetFloat) {
-      setError(`Minimum bet amount is ${minBetFloat} tokens`);
+      setError(`Minimum bet amount is ${minBetFloat} $GOAT`);
       return;
     }
     
@@ -732,7 +732,7 @@ const RockPaperScissors = ({ onClose }) => {
         // Join with ERC20 tokens
         const balance = await tokenContract.balanceOf(account);
         if (balance.lt(betAmount)) {
-          setError(`Insufficient balance. You need ${formatTokenAmount(betAmount)} tokens to join this game.`);
+                      setError(`Insufficient balance. You need ${formatTokenAmount(betAmount)} $GOAT to join this game.`);
           return;
         }
         
@@ -798,7 +798,7 @@ const RockPaperScissors = ({ onClose }) => {
 
   // Get currency symbol
   const getCurrencySymbol = (paymentType) => {
-    return paymentType === 1 ? 'AVAX' : 'tokens';
+    return paymentType === 1 ? 'AVAX' : '$GOAT';
   };
 
   // Game result popup component
@@ -1103,14 +1103,14 @@ const RockPaperScissors = ({ onClose }) => {
       
       <div className="create-game-form">
         <div className="form-group">
-          <label>Payment Type:</label>
+          <label>Game Type:</label>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
             <button
               className={`choice-btn ${paymentType === 'ERC20' ? 'selected' : ''}`}
               onClick={() => setPaymentType('ERC20')}
               style={{ flex: 1 }}
             >
-              <span className="choice-name">GOAT Tokens</span>
+              <span className="choice-name">$GOAT</span>
             </button>
             <button
               className={`choice-btn ${paymentType === 'AVAX' ? 'selected' : ''}`}
@@ -1133,7 +1133,7 @@ const RockPaperScissors = ({ onClose }) => {
         </div>
         
         <div className="form-group">
-          <label>Bet Amount ({paymentType === 'AVAX' ? 'AVAX' : 'tokens'}):</label>
+          <label>Bet Amount ({paymentType === 'AVAX' ? 'AVAX' : '$GOAT'}):</label>
           <input
             type="number"
             value={betAmount}
@@ -1143,12 +1143,12 @@ const RockPaperScissors = ({ onClose }) => {
             min={paymentType === 'ERC20' ? minBetAmount : '0.001'}
           />
           <div className="balance-info">
-            Balance: {paymentType === 'AVAX' ? parseFloat(avaxBalance).toFixed(4) : parseFloat(tokenBalance).toFixed(0)} {paymentType === 'AVAX' ? 'AVAX' : 'tokens'}
+            Balance: {paymentType === 'AVAX' ? parseFloat(avaxBalance).toFixed(4) : parseFloat(tokenBalance).toFixed(0)} {paymentType === 'AVAX' ? 'AVAX' : '$GOAT'}
             {paymentType === 'ERC20' && minBetAmount && (
               <>
                 <br />
                 <span style={{ color: parseFloat(betAmount || 0) < parseFloat(minBetAmount) && betAmount ? '#ff4757' : '#a0a0a0' }}>
-                  Minimum bet: {parseFloat(minBetAmount)} tokens
+                  Minimum bet: {parseFloat(minBetAmount)} $GOAT
                 </span>
               </>
             )}
@@ -1245,7 +1245,6 @@ const RockPaperScissors = ({ onClose }) => {
       
       if (!isInvolved) return false;
       
-      if (statsFilter === 'all') return true;
       if (statsFilter === 'erc20' && game.paymentType === 0) return true;
       if (statsFilter === 'avax' && game.paymentType === 1) return true;
       return false;
@@ -1286,7 +1285,7 @@ const RockPaperScissors = ({ onClose }) => {
       return { played, won, ties, totalBet, totalWinnings };
     };
 
-    const filteredStats = statsFilter === 'all' ? playerStats : calculateFilteredStats();
+    const filteredStats = calculateFilteredStats();
 
     const winRate = filteredStats.played > 0 
       ? ((filteredStats.won / filteredStats.played) * 100).toFixed(1)
@@ -1305,22 +1304,16 @@ const RockPaperScissors = ({ onClose }) => {
         {/* Stats Filter Buttons */}
         <div className="stats-filter-buttons">
           <button 
-            className={`filter-btn ${statsFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setStatsFilter('all')}
-          >
-            All Games
-          </button>
-          <button 
             className={`filter-btn ${statsFilter === 'erc20' ? 'active' : ''}`}
             onClick={() => setStatsFilter('erc20')}
           >
-            GOAT Token Games
+            <span style={{ fontWeight: 'bold' }}>$GOAT</span> Games
           </button>
           <button 
             className={`filter-btn ${statsFilter === 'avax' ? 'active' : ''}`}
             onClick={() => setStatsFilter('avax')}
           >
-            AVAX Games
+            <span style={{ fontWeight: 'bold' }}>AVAX</span> Games
           </button>
         </div>
 
@@ -1353,19 +1346,19 @@ const RockPaperScissors = ({ onClose }) => {
                 {/* Game Statistics */}
                 <div className="stat-card enhanced">
                   <div className="stat-icon">🎮</div>
-                  <div className="stat-value">{statsFilter === 'all' ? playerStats.played.toString() : filteredStats.played}</div>
+                  <div className="stat-value">{filteredStats.played}</div>
                   <div className="stat-label">Games Played</div>
                 </div>
                 
                 <div className="stat-card enhanced">
                   <div className="stat-icon">🏆</div>
-                  <div className="stat-value">{statsFilter === 'all' ? playerStats.won.toString() : filteredStats.won}</div>
+                  <div className="stat-value">{filteredStats.won}</div>
                   <div className="stat-label">Games Won</div>
                 </div>
                 
                 <div className="stat-card enhanced">
                   <div className="stat-icon">🤝</div>
-                  <div className="stat-value">{statsFilter === 'all' ? playerStats.ties.toString() : filteredStats.ties}</div>
+                  <div className="stat-value">{filteredStats.ties}</div>
                   <div className="stat-label">Games Tied</div>
                   <div className="stat-progress-bar">
                     <div 
@@ -1399,59 +1392,44 @@ const RockPaperScissors = ({ onClose }) => {
                 <div className="stat-card finance">
                   <div className="stat-icon">💰</div>
                   <div className="stat-value">
-                    {statsFilter === 'all' ? 
-                      formatTokenAmount(playerStats.bet) : 
-                      statsFilter === 'avax' ?
-                        formatAvaxAmount(filteredStats.totalBet) :
-                        formatTokenAmount(filteredStats.totalBet)
+                    {statsFilter === 'avax' ?
+                      formatAvaxAmount(filteredStats.totalBet) :
+                      formatTokenAmount(filteredStats.totalBet)
                     }
                   </div>
-                  <div className="stat-label">Total Bet ({statsFilter === 'avax' ? 'AVAX' : statsFilter === 'erc20' ? 'GOAT' : 'All'})</div>
+                  <div className="stat-label">Total Bet ({statsFilter === 'avax' ? 'AVAX' : '$GOAT'})</div>
                 </div>
                 
                 <div className="stat-card finance">
                   <div className="stat-icon">💸</div>
                   <div className="stat-value">
-                    {statsFilter === 'all' ? 
-                      formatTokenAmount(playerStats.winnings) : 
-                      statsFilter === 'avax' ?
-                        formatAvaxAmount(filteredStats.totalWinnings) :
-                        formatTokenAmount(filteredStats.totalWinnings)
+                    {statsFilter === 'avax' ?
+                      formatAvaxAmount(filteredStats.totalWinnings) :
+                      formatTokenAmount(filteredStats.totalWinnings)
                     }
                   </div>
-                  <div className="stat-label">Total Winnings ({statsFilter === 'avax' ? 'AVAX' : statsFilter === 'erc20' ? 'GOAT' : 'All'})</div>
+                  <div className="stat-label">Total Winnings ({statsFilter === 'avax' ? 'AVAX' : '$GOAT'})</div>
                 </div>
                 
                 <div className="stat-card finance">
                   <div className="stat-icon">📈</div>
                   <div className="stat-value" style={{ 
-                    color: statsFilter === 'all' ? 
-                      (playerStats.winnings.gt(playerStats.bet) ? colors.win : colors.loss) :
-                      (filteredStats.totalWinnings.gt(filteredStats.totalBet) ? colors.win : colors.loss)
+                    color: filteredStats.totalWinnings.gt(filteredStats.totalBet) ? colors.win : colors.loss
                   }}>
-                    {statsFilter === 'all' ? (
-                      <>
-                        {playerStats.winnings.gt(playerStats.bet) ? '+' : ''}
-                        {formatTokenAmount(playerStats.winnings.sub(playerStats.bet))}
-                      </>
-                    ) : (
-                      <>
-                        {filteredStats.totalWinnings.gt(filteredStats.totalBet) ? '+' : ''}
-                        {statsFilter === 'avax' ?
-                          formatAvaxAmount(filteredStats.totalWinnings.sub(filteredStats.totalBet)) :
-                          formatTokenAmount(filteredStats.totalWinnings.sub(filteredStats.totalBet))
-                        }
-                      </>
-                    )}
+                    {filteredStats.totalWinnings.gt(filteredStats.totalBet) ? '+' : ''}
+                    {statsFilter === 'avax' ?
+                      formatAvaxAmount(filteredStats.totalWinnings.sub(filteredStats.totalBet)) :
+                      formatTokenAmount(filteredStats.totalWinnings.sub(filteredStats.totalBet))
+                    }
                   </div>
-                  <div className="stat-label">Net Profit ({statsFilter === 'avax' ? 'AVAX' : statsFilter === 'erc20' ? 'GOAT' : 'All'})</div>
+                  <div className="stat-label">Net Profit ({statsFilter === 'avax' ? 'AVAX' : '$GOAT'})</div>
                 </div>
               </div>
             </div>
 
             {/* Pie chart */}
             <div className="stats-chart-container">
-              <h3 className="stats-chart-title">Game Outcome Distribution ({statsFilter === 'all' ? 'All Games' : statsFilter === 'avax' ? 'AVAX Games' : 'GOAT Token Games'})</h3>
+              <h3 className="stats-chart-title">Game Outcome Distribution ({statsFilter === 'avax' ? 'AVAX Games' : '$GOAT Games'})</h3>
               <div className="stats-chart">
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -1481,10 +1459,10 @@ const RockPaperScissors = ({ onClose }) => {
         {/* Recent Games */}
         {activeStatsSection === 'recent' && (
           <div className="recent-games-section">
-            <h3 className="stats-section-title">Recent Games ({statsFilter === 'all' ? 'All' : statsFilter === 'avax' ? 'AVAX' : 'GOAT Token'})</h3>
+            <h3 className="stats-section-title">Recent Games ({statsFilter === 'avax' ? 'AVAX' : '$GOAT'})</h3>
             
             {recentGames.length === 0 ? (
-              <div className="no-games-message">No completed {statsFilter !== 'all' ? `${statsFilter.toUpperCase()} ` : ''}games yet.</div>
+              <div className="no-games-message">No completed {statsFilter === 'avax' ? 'AVAX' : '$GOAT'} games yet.</div>
             ) : (
               <div className="recent-games-grid">
                 {recentGames.map((gameData) => {
@@ -1549,7 +1527,7 @@ const RockPaperScissors = ({ onClose }) => {
         {activeStatsSection === 'analysis' && (
           <div className="performance-analysis">
             <div className="analysis-section">
-              <h3 className="stats-section-title">Win Rate History ({statsFilter === 'all' ? 'All Games' : statsFilter === 'avax' ? 'AVAX Games' : 'GOAT Token Games'})</h3>
+              <h3 className="stats-section-title">Win Rate History ({statsFilter === 'avax' ? 'AVAX Games' : '$GOAT Games'})</h3>
               <div className="analysis-chart">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={winRateHistory}>
@@ -1610,7 +1588,7 @@ const RockPaperScissors = ({ onClose }) => {
             </div>
 
             <div className="stats-insights">
-              <h3 className="stats-section-title">Performance Insights ({statsFilter === 'all' ? 'All Games' : statsFilter === 'avax' ? 'AVAX' : 'GOAT Token'})</h3>
+              <h3 className="stats-section-title">Performance Insights ({statsFilter === 'avax' ? 'AVAX' : '$GOAT'})</h3>
               <div className="insight-cards">
                 <div className="insight-card">
                   <div className="insight-icon">💡</div>
@@ -1632,7 +1610,7 @@ const RockPaperScissors = ({ onClose }) => {
                   <div className="insight-icon">📊</div>
                   <div className="insight-content">
                     <h4>Performance Summary</h4>
-                    <p>With a {winRate}% win rate in {statsFilter === 'all' ? 'all games' : statsFilter === 'avax' ? 'AVAX games' : 'GOAT Token games'}, you're performing {parseFloat(winRate) > 50 ? 'above' : 'below'} average.</p>
+                    <p>With a {winRate}% win rate in {statsFilter === 'avax' ? 'AVAX games' : '$GOAT games'}, you're performing {parseFloat(winRate) > 50 ? 'above' : 'below'} average.</p>
                   </div>
                 </div>
                 
@@ -1642,18 +1620,16 @@ const RockPaperScissors = ({ onClose }) => {
                     <h4>Betting Strategy</h4>
                     <p>
                       {filteredStats.played > 0 ? (
-                        `Your average bet in ${statsFilter === 'all' ? 'all games' : statsFilter === 'avax' ? 'AVAX' : 'GOAT Token'} is: ${
-                          statsFilter === 'all' ? 
-                            formatTokenAmount(playerStats.bet.div(playerStats.played)) + ' tokens' :
+                        `Your average bet in ${statsFilter === 'avax' ? 'AVAX' : '$GOAT'} is: ${
                           statsFilter === 'avax' ?
                             formatAvaxAmount(filteredStats.totalBet.div(filteredStats.played)) + ' AVAX' :
-                            formatTokenAmount(filteredStats.totalBet.div(filteredStats.played)) + ' tokens'
+                            formatTokenAmount(filteredStats.totalBet.div(filteredStats.played)) + ' $GOAT'
                         }.
                         ${filteredStats.totalWinnings.gt(filteredStats.totalBet) ? 
                           " Your strategy is profitable!" : 
                           " Consider adjusting your strategy to improve profits."}`
                       ) : (
-                        `Play more ${statsFilter !== 'all' ? statsFilter.toUpperCase() + ' ' : ''}games to see betting insights.`
+                        `Play more ${statsFilter === 'avax' ? 'AVAX' : '$GOAT'} games to see betting insights.`
                       )}
                     </p>
                   </div>
