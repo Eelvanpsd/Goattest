@@ -33,30 +33,25 @@
 
 /* RPS Button - Physically above the image (not overlay) - NEW POSITION */
 .rps-button-top {
-  margin-bottom: 15px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 25px;
-  font-size: 16px;
-  font-weight: bold;
+  display: block;
+  margin: 0 auto 15px auto;
+  width: 300px;
+  height: auto;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  border-radius: 25px;
   transition: all 0.3s ease;
   animation: slideDown 0.6s ease-out;
   z-index: 10;
 }
 
 .rps-button-top:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  transform: translateY(-2px) scale(1.05);
+
 }
 
 .rps-button-top:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transform: translateY(0) scale(1);
+
 }
 
 /* FlappyGame Button - Re-added CSS */

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import FlappyGame from './FlappyGame'; // Import FlappyGame component
 import RockPaperScissors from './RockPaperScissors'; // Import RockPaperScissors component
-import TrollPopup from './TrollPopup'; // Import Troll popup component - NEW
 // Import the background image
 import backgroundImage from './colosseum.jpg';
 
@@ -16,7 +15,7 @@ function App() {
   const [showPlayButton, setShowPlayButton] = useState(false); // To control the Easter egg button
   const [showFlappyGame, setShowFlappyGame] = useState(false); // To show Flappy Bird game
   const [showRockPaperScissors, setShowRockPaperScissors] = useState(false); // For Rock-Paper-Scissors
-  const [showRPSButton, setShowRPSButton] = useState(false); // To control RPS button
+  const [showRPSButton, setShowRPSButton] = useState(true); // To control RPS button
   const [isMobile, setIsMobile] = useState(false); // For mobile device detection
   const prevCharacterIndex = useRef(0);
   const hasShownConfetti = useRef(false);
@@ -242,18 +241,18 @@ function App() {
   
   return (
     <div className="App" style={{ backgroundImage: `url(${backgroundImage})` }}>
-      {/* Troll Popup - Automatically shown when site opens - NEW */}
-      <TrollPopup />
-      
       <div className="confetti-container" style={{ display: 'none' }}>
         {confettiElements}
       </div>
       
       {/* RPS Button - Physically above the image */}
       {showRPSButton && (
-        <button className="rps-button-top" onClick={handleRPSClick}>
-          🎮 Rock Paper Scissors
-        </button>
+        <img 
+          src={process.env.PUBLIC_URL + '/rps-button.webp'}
+          alt="Rock Paper Scissors"
+          className="rps-button-top"
+          onClick={handleRPSClick}
+        />
       )}
       
       <div className="character-container" onClick={handleCharacterClick}>
