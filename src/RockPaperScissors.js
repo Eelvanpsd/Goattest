@@ -1020,6 +1020,48 @@ const RockPaperScissors = ({ onClose }) => {
         
         if (tx) {
           await tx.wait();
+// ↓ ERC20 için oyun bitişini dinleyip pop-up göstermek ↓
+if (tx) {
+  await tx.wait();
+
+  const checkGameResolution = setInterval(async () => {
+    try {
+      const [updatedGame] = await contract.getGame(gameId);
+      if (updatedGame.state === 2) { // Oyun bitti
+        clearInterval(checkGameResolution);
+
+        const userAddr   = account.toLowerCase();
+        const isPlayer1  = updatedGame.p1.toLowerCase() === userAddr;
+        const isPlayer2  = updatedGame.p2.toLowerCase() === userAddr;
+        const isInvolved = isPlayer1 || isPlayer2;
+        if (!isInvolved) return;
+
+        const isTie    = updatedGame.winner === ethers.constants.AddressZero;
+        const isWinner = !isTie && updatedGame.winner.toLowerCase() === userAddr;
+
+        setGameResultPopup({
+          gameId:      gameId.toString(),
+          result:      isTie ? 'tie' : (isWinner ? 'won' : 'lost'),
+          refundAmount: isTie ? updatedGame.bet : undefined,
+          winner:      !isTie ? updatedGame.winner : undefined,
+          winnings:    !isTie ? updatedGame.bet.mul(2).mul(95).div(100) : undefined,
+          playerChoice:   isPlayer1 ? updatedGame.p1Choice : updatedGame.p2Choice,
+          opponentChoice: isPlayer1 ? updatedGame.p2Choice : updatedGame.p1Choice,
+          betAmount:      updatedGame.bet,
+          isAVAXGame:     false
+        });
+      }
+    } catch (err) {
+      console.error('ERC20 resolution check error:', err);
+    }
+  }, 2000);  // Her 2 saniyede kontrol et
+
+  // 30 saniye sonra dinlemeyi durdur
+  setTimeout(() => clearInterval(checkGameResolution), 30000);
+}
+// ↑ ERC20 için oyun bitişini dinleyip pop-up göstermek ↑
+
+
         }
       }
       
