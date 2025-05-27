@@ -158,6 +158,41 @@ const RockPaperScissors = ({ onClose }) => {
   // Mobile-specific state
   const [isMobile, setIsMobile] = useState(false);
 
+  // Enhanced close handler with animation
+  const handleClose = () => {
+    const modal = document.querySelector('.rps-game-modal');
+    if (modal) {
+      modal.classList.add('closing');
+      setTimeout(() => {
+        onClose();
+      }, 400);
+    } else {
+      onClose();
+    }
+  };
+
+  // Escape key handler for fullscreen
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, []);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   // Refs for cleanup
   const eventListenersRef = useRef(new Map());
   const intervalsRef = useRef(new Map());
@@ -1936,6 +1971,7 @@ const RockPaperScissors = ({ onClose }) => {
                 onClose();
               }}
               style={{ touchAction: 'manipulation' }}
+              title="Close (ESC)"
             >✕</button>
           </div>
         </div>
