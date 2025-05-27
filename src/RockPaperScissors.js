@@ -153,6 +153,7 @@ const RockPaperScissors = ({ onClose }) => {
   // Enhanced statistics state
   const [activeStatsSection, setActiveStatsSection] = useState('summary');
   const [winRateHistory, setWinRateHistory] = useState([]);
+  const [statsFilter, setStatsFilter] = useState('all'); // 'all', 'erc20', 'avax'
 
   // Mobile-specific state
   const [isMobile, setIsMobile] = useState(false);
@@ -1235,20 +1236,94 @@ const RockPaperScissors = ({ onClose }) => {
       light: '#a0a0a0'
     };
 
-    const winRate = playerStats.played.gt(0) 
-      ? ((playerStats.won.toNumber() / playerStats.played.toNumber()) * 100).toFixed(1)
+    // Filter finished games based on payment type
+    const filteredFinishedGames = finishedGames.filter(gameData => {
+      const { game } = gameData;
+      const isPlayer1 = game.p1.toLowerCase() === account?.toLowerCase();
+      const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
+      const isInvolved = isPlayer1 || isPlayer2;
+      
+      if (!isInvolved) return false;
+      
+      if (statsFilter === 'all') return true;
+      if (statsFilter === 'erc20' && game.paymentType === 0) return true;
+      if (statsFilter === 'avax' && game.paymentType === 1) return true;
+      return false;
+    });
+
+    // Calculate stats from filtered games
+    const calculateFilteredStats = () => {
+      let played = 0;
+      let won = 0;
+      let ties = 0;
+      let totalBet = ethers.BigNumber.from(0);
+      let totalWinnings = ethers.BigNumber.from(0);
+
+      filteredFinishedGames.forEach(gameData => {
+        const { game } = gameData;
+        const isPlayer1 = game.p1.toLowerCase() === account?.toLowerCase();
+        const isPlayer2 = game.p2.toLowerCase() === account?.toLowerCase();
+        const isWinner = game.winner && game.winner.toLowerCase() === account?.toLowerCase();
+        const isTie = game.state === 2 && game.winner === ethers.constants.AddressZero;
+        
+        played++;
+        
+        if (isTie) {
+          ties++;
+          // In ties, players get their bet back
+          totalWinnings = totalWinnings.add(game.bet);
+        } else if (isWinner) {
+          won++;
+          // Winner gets double the bet minus house fee
+          const houseFee = game.bet.mul(5).div(100); // Assuming 5% house fee
+          const winAmount = game.bet.mul(2).sub(houseFee);
+          totalWinnings = totalWinnings.add(winAmount);
+        }
+        
+        totalBet = totalBet.add(game.bet);
+      });
+
+      return { played, won, ties, totalBet, totalWinnings };
+    };
+
+    const filteredStats = statsFilter === 'all' ? playerStats : calculateFilteredStats();
+
+    const winRate = filteredStats.played > 0 
+      ? ((filteredStats.won / filteredStats.played) * 100).toFixed(1)
       : 0;
 
     const gameOutcomeData = [
-      { name: 'Won', value: playerStats.won.toNumber(), color: colors.win },
-      { name: 'Lost', value: playerStats.played.toNumber() - playerStats.won.toNumber() - playerStats.ties.toNumber(), color: colors.loss },
-      { name: 'Tied', value: playerStats.ties.toNumber(), color: colors.tie }
+      { name: 'Won', value: filteredStats.won || 0, color: colors.win },
+      { name: 'Lost', value: (filteredStats.played || 0) - (filteredStats.won || 0) - (filteredStats.ties || 0), color: colors.loss },
+      { name: 'Tied', value: filteredStats.ties || 0, color: colors.tie }
     ];
 
-    const recentGames = finishedGames ? finishedGames.slice(0, 10) : [];
+    const recentGames = filteredFinishedGames.slice(0, 10);
 
     return (
       <div className="enhanced-statistics">
+        {/* Stats Filter Buttons */}
+        <div className="stats-filter-buttons">
+          <button 
+            className={`filter-btn ${statsFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setStatsFilter('all')}
+          >
+            All Games
+          </button>
+          <button 
+            className={`filter-btn ${statsFilter === 'erc20' ? 'active' : ''}`}
+            onClick={() => setStatsFilter('erc20')}
+          >
+            GOAT Token Games
+          </button>
+          <button 
+            className={`filter-btn ${statsFilter === 'avax' ? 'active' : ''}`}
+            onClick={() => setStatsFilter('avax')}
+          >
+            AVAX Games
+          </button>
+        </div>
+
         <div className="stats-tabs">
           <button 
             className={`stats-tab ${activeStatsSection === 'summary' ? 'active' : ''}`}
@@ -1278,25 +1353,25 @@ const RockPaperScissors = ({ onClose }) => {
                 {/* Game Statistics */}
                 <div className="stat-card enhanced">
                   <div className="stat-icon">🎮</div>
-                  <div className="stat-value">{playerStats.played.toString()}</div>
+                  <div className="stat-value">{statsFilter === 'all' ? playerStats.played.toString() : filteredStats.played}</div>
                   <div className="stat-label">Games Played</div>
                 </div>
                 
                 <div className="stat-card enhanced">
                   <div className="stat-icon">🏆</div>
-                  <div className="stat-value">{playerStats.won.toString()}</div>
+                  <div className="stat-value">{statsFilter === 'all' ? playerStats.won.toString() : filteredStats.won}</div>
                   <div className="stat-label">Games Won</div>
                 </div>
                 
                 <div className="stat-card enhanced">
                   <div className="stat-icon">🤝</div>
-                  <div className="stat-value">{playerStats.ties.toString()}</div>
+                  <div className="stat-value">{statsFilter === 'all' ? playerStats.ties.toString() : filteredStats.ties}</div>
                   <div className="stat-label">Games Tied</div>
                   <div className="stat-progress-bar">
                     <div 
                       className="stat-progress" 
                       style={{ 
-                        width: `${playerStats.played.gt(0) ? (playerStats.ties.toNumber() / playerStats.played.toNumber()) * 100 : 0}%`,
+                        width: `${filteredStats.played > 0 ? (filteredStats.ties / filteredStats.played) * 100 : 0}%`,
                         backgroundColor: colors.tie 
                       }}
                     ></div>
@@ -1323,32 +1398,60 @@ const RockPaperScissors = ({ onClose }) => {
                 {/* Financial Statistics */}
                 <div className="stat-card finance">
                   <div className="stat-icon">💰</div>
-                  <div className="stat-value">{formatTokenAmount(playerStats.bet)}</div>
-                  <div className="stat-label">Total Bet</div>
+                  <div className="stat-value">
+                    {statsFilter === 'all' ? 
+                      formatTokenAmount(playerStats.bet) : 
+                      statsFilter === 'avax' ?
+                        formatAvaxAmount(filteredStats.totalBet) :
+                        formatTokenAmount(filteredStats.totalBet)
+                    }
+                  </div>
+                  <div className="stat-label">Total Bet ({statsFilter === 'avax' ? 'AVAX' : statsFilter === 'erc20' ? 'GOAT' : 'All'})</div>
                 </div>
                 
                 <div className="stat-card finance">
                   <div className="stat-icon">💸</div>
-                  <div className="stat-value">{formatTokenAmount(playerStats.winnings)}</div>
-                  <div className="stat-label">Total Winnings</div>
+                  <div className="stat-value">
+                    {statsFilter === 'all' ? 
+                      formatTokenAmount(playerStats.winnings) : 
+                      statsFilter === 'avax' ?
+                        formatAvaxAmount(filteredStats.totalWinnings) :
+                        formatTokenAmount(filteredStats.totalWinnings)
+                    }
+                  </div>
+                  <div className="stat-label">Total Winnings ({statsFilter === 'avax' ? 'AVAX' : statsFilter === 'erc20' ? 'GOAT' : 'All'})</div>
                 </div>
                 
                 <div className="stat-card finance">
                   <div className="stat-icon">📈</div>
                   <div className="stat-value" style={{ 
-                    color: playerStats.winnings.gt(playerStats.bet) ? colors.win : colors.loss 
+                    color: statsFilter === 'all' ? 
+                      (playerStats.winnings.gt(playerStats.bet) ? colors.win : colors.loss) :
+                      (filteredStats.totalWinnings.gt(filteredStats.totalBet) ? colors.win : colors.loss)
                   }}>
-                    {playerStats.winnings.gt(playerStats.bet) ? '+' : ''}
-                    {formatTokenAmount(playerStats.winnings.sub(playerStats.bet))}
+                    {statsFilter === 'all' ? (
+                      <>
+                        {playerStats.winnings.gt(playerStats.bet) ? '+' : ''}
+                        {formatTokenAmount(playerStats.winnings.sub(playerStats.bet))}
+                      </>
+                    ) : (
+                      <>
+                        {filteredStats.totalWinnings.gt(filteredStats.totalBet) ? '+' : ''}
+                        {statsFilter === 'avax' ?
+                          formatAvaxAmount(filteredStats.totalWinnings.sub(filteredStats.totalBet)) :
+                          formatTokenAmount(filteredStats.totalWinnings.sub(filteredStats.totalBet))
+                        }
+                      </>
+                    )}
                   </div>
-                  <div className="stat-label">Net Profit</div>
+                  <div className="stat-label">Net Profit ({statsFilter === 'avax' ? 'AVAX' : statsFilter === 'erc20' ? 'GOAT' : 'All'})</div>
                 </div>
               </div>
             </div>
 
             {/* Pie chart */}
             <div className="stats-chart-container">
-              <h3 className="stats-chart-title">Game Outcome Distribution</h3>
+              <h3 className="stats-chart-title">Game Outcome Distribution ({statsFilter === 'all' ? 'All Games' : statsFilter === 'avax' ? 'AVAX Games' : 'GOAT Token Games'})</h3>
               <div className="stats-chart">
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -1378,10 +1481,10 @@ const RockPaperScissors = ({ onClose }) => {
         {/* Recent Games */}
         {activeStatsSection === 'recent' && (
           <div className="recent-games-section">
-            <h3 className="stats-section-title">Recent Games</h3>
+            <h3 className="stats-section-title">Recent Games ({statsFilter === 'all' ? 'All' : statsFilter === 'avax' ? 'AVAX' : 'GOAT Token'})</h3>
             
             {recentGames.length === 0 ? (
-              <div className="no-games-message">No completed games yet.</div>
+              <div className="no-games-message">No completed {statsFilter !== 'all' ? `${statsFilter.toUpperCase()} ` : ''}games yet.</div>
             ) : (
               <div className="recent-games-grid">
                 {recentGames.map((gameData) => {
@@ -1446,7 +1549,7 @@ const RockPaperScissors = ({ onClose }) => {
         {activeStatsSection === 'analysis' && (
           <div className="performance-analysis">
             <div className="analysis-section">
-              <h3 className="stats-section-title">Win Rate History</h3>
+              <h3 className="stats-section-title">Win Rate History ({statsFilter === 'all' ? 'All Games' : statsFilter === 'avax' ? 'AVAX Games' : 'GOAT Token Games'})</h3>
               <div className="analysis-chart">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={winRateHistory}>
@@ -1507,7 +1610,7 @@ const RockPaperScissors = ({ onClose }) => {
             </div>
 
             <div className="stats-insights">
-              <h3 className="stats-section-title">Performance Insights</h3>
+              <h3 className="stats-section-title">Performance Insights ({statsFilter === 'all' ? 'All Games' : statsFilter === 'avax' ? 'AVAX' : 'GOAT Token'})</h3>
               <div className="insight-cards">
                 <div className="insight-card">
                   <div className="insight-icon">💡</div>
@@ -1529,7 +1632,7 @@ const RockPaperScissors = ({ onClose }) => {
                   <div className="insight-icon">📊</div>
                   <div className="insight-content">
                     <h4>Performance Summary</h4>
-                    <p>With a {winRate}% win rate, you're performing {parseFloat(winRate) > 50 ? 'above' : 'below'} average.</p>
+                    <p>With a {winRate}% win rate in {statsFilter === 'all' ? 'all games' : statsFilter === 'avax' ? 'AVAX games' : 'GOAT Token games'}, you're performing {parseFloat(winRate) > 50 ? 'above' : 'below'} average.</p>
                   </div>
                 </div>
                 
@@ -1538,13 +1641,19 @@ const RockPaperScissors = ({ onClose }) => {
                   <div className="insight-content">
                     <h4>Betting Strategy</h4>
                     <p>
-                      {playerStats.played.gt(0) ? (
-                        `Your average bet is: ${formatTokenAmount(playerStats.bet.div(playerStats.played))} tokens.
-                        ${playerStats.winnings.gt(playerStats.bet) ? 
-                          "Your strategy is profitable!" : 
-                          "Consider adjusting your strategy to improve profits."}`
+                      {filteredStats.played > 0 ? (
+                        `Your average bet in ${statsFilter === 'all' ? 'all games' : statsFilter === 'avax' ? 'AVAX' : 'GOAT Token'} is: ${
+                          statsFilter === 'all' ? 
+                            formatTokenAmount(playerStats.bet.div(playerStats.played)) + ' tokens' :
+                          statsFilter === 'avax' ?
+                            formatAvaxAmount(filteredStats.totalBet.div(filteredStats.played)) + ' AVAX' :
+                            formatTokenAmount(filteredStats.totalBet.div(filteredStats.played)) + ' tokens'
+                        }.
+                        ${filteredStats.totalWinnings.gt(filteredStats.totalBet) ? 
+                          " Your strategy is profitable!" : 
+                          " Consider adjusting your strategy to improve profits."}`
                       ) : (
-                        "Play more games to see betting insights."
+                        `Play more ${statsFilter !== 'all' ? statsFilter.toUpperCase() + ' ' : ''}games to see betting insights.`
                       )}
                     </p>
                   </div>
