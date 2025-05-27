@@ -772,6 +772,42 @@ const RockPaperScissors = ({ onClose }) => {
       }
       
       await tx.wait();
+
+      // ↓ Kurucu için oyun bitişini dinleyip pop-up göster ↓
+// (Son yaratılan ID'yi alıyoruz)
+const newGameId = (await contract.gameId()).toString();
+
+const checkCreatorResolution = setInterval(async () => {
+  try {
+    const [updatedGame] = await contract.getGame(newGameId);
+    if (updatedGame.state === 2) {  // Oyun bitti
+      clearInterval(checkCreatorResolution);
+
+      const userAddr  = account.toLowerCase();
+      // Kurucu her zaman p1’dir:
+      const isTie     = updatedGame.winner === ethers.constants.AddressZero;
+      const isWinner  = !isTie && updatedGame.winner.toLowerCase() === userAddr;
+
+      setGameResultPopup({
+        gameId:        newGameId,
+        result:        isTie ? 'tie' : (isWinner ? 'won' : 'lost'),
+        refundAmount:  isTie ? updatedGame.bet : undefined,
+        winner:        !isTie ? updatedGame.winner : undefined,
+        winnings:      !isTie ? updatedGame.bet.mul(2).mul(95).div(100) : undefined,
+        playerChoice:   updatedGame.p1Choice,
+        opponentChoice: updatedGame.p2Choice,
+        betAmount:      updatedGame.bet,
+        isAVAXGame:     false
+      });
+    }
+  } catch (err) {
+    console.error('Creator resolution error:', err);
+  }
+}, 2000);
+// 30 saniye sonra otomatik durdur
+setTimeout(() => clearInterval(checkCreatorResolution), 30000);
+// ↑ Kurucu için polling bloğu ↑
+
       
       setSelectedChoice(null);
       setBetAmount('');
@@ -836,6 +872,39 @@ const RockPaperScissors = ({ onClose }) => {
       }
       
       await tx.wait();
+
+      // ↓ Kurucu için AVAX oyunu bitişini dinleyip pop-up göster ↓
+const newGameId = (await contract.gameId()).toString();
+
+const checkCreatorResolutionAvax = setInterval(async () => {
+  try {
+    const [updatedGame] = await contract.getGame(newGameId);
+    if (updatedGame.state === 2) {
+      clearInterval(checkCreatorResolutionAvax);
+
+      const userAddr  = account.toLowerCase();
+      const isTie     = updatedGame.winner === ethers.constants.AddressZero;
+      const isWinner  = !isTie && updatedGame.winner.toLowerCase() === userAddr;
+
+      setGameResultPopup({
+        gameId:        newGameId,
+        result:        isTie ? 'tie' : (isWinner ? 'won' : 'lost'),
+        refundAmount:  isTie ? updatedGame.bet : undefined,
+        winner:        !isTie ? updatedGame.winner : undefined,
+        winnings:      !isTie ? updatedGame.bet.mul(2).mul(95).div(100) : undefined,
+        playerChoice:   updatedGame.p1Choice,
+        opponentChoice: updatedGame.p2Choice,
+        betAmount:      updatedGame.bet,
+        isAVAXGame:     true
+      });
+    }
+  } catch (err) {
+    console.error('Creator AVAX resolution error:', err);
+  }
+}, 2000);
+setTimeout(() => clearInterval(checkCreatorResolutionAvax), 30000);
+// ↑ AVAX kurucu için polling ↑
+
       
       setSelectedChoice(null);
       setBetAmount('');
