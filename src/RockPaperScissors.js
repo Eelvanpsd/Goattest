@@ -769,8 +769,8 @@ const RockPaperScissors = ({ onClose }) => {
     }
     
     const minBetFloat = parseFloat(minBetAmount);
-    if (parseFloat(betAmount) < minBetFloat) {
-      setError(`Minimum bet amount is ${minBetFloat} GOAT`);
+    if (parseFloat(betAmount) < 25000) {
+      setError(`Minimum bet amount is 25,000 GOAT`);
       return;
     }
     
@@ -853,6 +853,10 @@ const RockPaperScissors = ({ onClose }) => {
     }
     
     if (!betAmount || parseFloat(betAmount) <= 0) {
+      if (parseFloat(betAmount) < 0.1) {
+        setError('Minimum bet amount is 0.1 AVAX');
+        return;
+      }
       setError('Please enter a valid bet amount');
       return;
     }
@@ -1400,17 +1404,17 @@ const RockPaperScissors = ({ onClose }) => {
             type="number"
             value={betAmount}
             onChange={(e) => setBetAmount(e.target.value)}
-            placeholder={`Enter bet amount${paymentType === 'ERC20' && minBetAmount ? ` (minimum ${parseFloat(minBetAmount)})` : ''}`}
+            placeholder={`Enter bet amount (minimum ${paymentType === 'AVAX' ? '0.1 AVAX' : '25,000 GOAT'})`}
             step="0.001"
-            min={paymentType === 'ERC20' ? minBetAmount : '0.001'}
+            min={paymentType === 'ERC20' ? '25000' : '0.1'}
           />
           <div className="balance-info">
             Balance: {paymentType === 'AVAX' ? parseFloat(avaxBalance).toFixed(4) : parseFloat(tokenBalance).toFixed(0)} {paymentType === 'AVAX' ? 'AVAX' : 'GOAT'}
             {paymentType === 'ERC20' && minBetAmount && (
               <>
                 <br />
-                <span style={{ color: parseFloat(betAmount || 0) < parseFloat(minBetAmount) && betAmount ? '#ff4757' : '#a0a0a0' }}>
-                  Minimum bet: {parseFloat(minBetAmount)} GOAT
+                <span style={{ color: (paymentType === 'ERC20' && parseFloat(betAmount || 0) < 25000 && betAmount) || (paymentType === 'AVAX' && parseFloat(betAmount || 0) < 0.1 && betAmount) ? '#ff4757' : '#a0a0a0' }}>
+                 Minimum bet: {paymentType === 'AVAX' ? '0.1 AVAX' : '25,000 GOAT'}
                 </span>
               </>
             )}
@@ -1423,7 +1427,7 @@ const RockPaperScissors = ({ onClose }) => {
           disabled={
             !selectedChoice || 
             !betAmount || 
-            (paymentType === 'ERC20' && parseFloat(betAmount) < parseFloat(minBetAmount)) ||
+            (paymentType === 'ERC20' && parseFloat(betAmount) < 25000) ||
             (paymentType === 'AVAX' && parseFloat(betAmount) <= 0) ||
             loading || 
             !account || 
