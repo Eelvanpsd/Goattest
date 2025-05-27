@@ -15,9 +15,9 @@ const TOKEN_ADDRESS = '0xB9C188BC558a82a1eE9E75AE0857df443F407632';
 // Avalanche network configuration
 const AVALANCHE_NETWORK = {
   chainId: '0xA86A', // 43114 in hex
-  chainName: 'Avalanche Mainnet',
+  chainName: 'Avalanche C-Chain',
   nativeCurrency: {
-    name: 'AVAX',
+    name: 'Avalanche',
     symbol: 'AVAX',
     decimals: 18
   },
@@ -167,6 +167,36 @@ const RockPaperScissors = ({ onClose }) => {
   const choiceStats = {
     yours: [35, 40, 25], // Rock, Paper, Scissors percentages
     opponents: [30, 45, 25] // Rock, Paper, Scissors percentages
+  };
+
+  // MetaMask detection helper
+  const isMetaMask = () => {
+    return window.ethereum && window.ethereum.isMetaMask;
+  };
+
+  // Gas estimation helper function
+  const getGasLimitWithBuffer = async (contract, methodName, params, isMetaMask = false) => {
+    try {
+      // Gas tahmini al
+      const estimatedGas = await contract.estimateGas[methodName](...params);
+      
+      // MetaMask için %30 buffer ekle, diğerleri için %10
+      const buffer = isMetaMask ? 130 : 110;
+      const gasWithBuffer = estimatedGas.mul(buffer).div(100);
+      
+      console.log(`Gas estimation for ${methodName}:`, {
+        estimated: estimatedGas.toString(),
+        withBuffer: gasWithBuffer.toString(),
+        buffer: `${buffer - 100}%`,
+        wallet: isMetaMask ? 'MetaMask' : 'Other'
+      });
+      
+      return gasWithBuffer;
+    } catch (error) {
+      console.error('Gas estimation failed:', error);
+      // Fallback gas limit
+      return isMetaMask ? ethers.BigNumber.from("600000") : ethers.BigNumber.from("500000");
+    }
   };
 
   // Generate win rate history data
@@ -328,6 +358,13 @@ const RockPaperScissors = ({ onClose }) => {
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
       if (chainId === AVALANCHE_NETWORK.chainId) {
         setNetworkCorrect(true);
+        
+        // MetaMask için provider'ı yenile
+        if (isMetaMask()) {
+          const newProvider = new ethers.providers.Web3Provider(window.ethereum);
+          setProvider(newProvider);
+          setSigner(newProvider.getSigner());
+        }
       } else {
         setNetworkCorrect(false);
         await switchToAvalanche();
@@ -629,19 +666,46 @@ const RockPaperScissors = ({ onClose }) => {
       setError('');
       
       const betWei = ethers.utils.parseEther(betAmount);
+      const usingMetaMask = isMetaMask();
       
       // Check and approve tokens if needed
       const currentAllowance = ethers.BigNumber.from(ethers.utils.parseEther(tokenAllowance));
       if (currentAllowance.lt(betWei)) {
-        const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betWei);
+        // MetaMask için approval gas limit
+        const approveGasLimit = usingMetaMask 
+          ? await getGasLimitWithBuffer(tokenContract, 'approve', [CONTRACT_ADDRESS, betWei], true)
+          : undefined;
+        
+        const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betWei, 
+          approveGasLimit ? { gasLimit: approveGasLimit } : {}
+        );
         await approveTx.wait();
+        
+        // MetaMask için ekstra bekleme
+        if (usingMetaMask) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
         
         const newAllowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
         setTokenAllowance(ethers.utils.formatEther(newAllowance));
       }
       
-      // Create game with ERC20 tokens
-      const tx = await contract.createGameERC20(betWei, selectedChoice);
+      // Create game with ERC20 tokens - MetaMask için gas limit ekle
+      let tx;
+      if (usingMetaMask) {
+        const gasLimit = await getGasLimitWithBuffer(
+          contract, 
+          'createGameERC20', 
+          [betWei, selectedChoice], 
+          true
+        );
+        
+        tx = await contract.createGameERC20(betWei, selectedChoice, { gasLimit });
+      } else {
+        // Diğer walletlar için normal işlem
+        tx = await contract.createGameERC20(betWei, selectedChoice);
+      }
+      
       await tx.wait();
       
       setSelectedChoice(null);
@@ -685,9 +749,27 @@ const RockPaperScissors = ({ onClose }) => {
       setError('');
       
       const betWei = ethers.utils.parseEther(betAmount);
+      const usingMetaMask = isMetaMask();
       
-      // Create game with AVAX
-      const tx = await contract.createGameAVAX(selectedChoice, { value: betWei });
+      // Create game with AVAX - MetaMask için gas limit ekle
+      let tx;
+      if (usingMetaMask) {
+        const gasLimit = await getGasLimitWithBuffer(
+          contract, 
+          'createGameAVAX', 
+          [selectedChoice], 
+          true
+        );
+        
+        tx = await contract.createGameAVAX(selectedChoice, { 
+          value: betWei,
+          gasLimit: gasLimit 
+        });
+      } else {
+        // Diğer walletlar için normal işlem
+        tx = await contract.createGameAVAX(selectedChoice, { value: betWei });
+      }
+      
       await tx.wait();
       
       setSelectedChoice(null);
@@ -723,29 +805,70 @@ const RockPaperScissors = ({ onClose }) => {
       
       const betAmount = game.bet;
       const isAVAXGame = game.paymentType === 1;
+      const usingMetaMask = isMetaMask();
       
       if (isAVAXGame) {
         // Join with AVAX
-        const tx = await contract.joinGame(gameId, choice, { value: betAmount });
+        let tx;
+        if (usingMetaMask) {
+          const gasLimit = await getGasLimitWithBuffer(
+            contract, 
+            'joinGame', 
+            [gameId, choice], 
+            true
+          );
+          
+          tx = await contract.joinGame(gameId, choice, { 
+            value: betAmount,
+            gasLimit: gasLimit 
+          });
+        } else {
+          tx = await contract.joinGame(gameId, choice, { value: betAmount });
+        }
         await tx.wait();
       } else {
         // Join with ERC20 tokens
         const balance = await tokenContract.balanceOf(account);
         if (balance.lt(betAmount)) {
-                      setError(`Insufficient balance. You need ${formatTokenAmount(betAmount)} GOAT to join this game.`);
+          setError(`Insufficient balance. You need ${formatTokenAmount(betAmount)} GOAT to join this game.`);
           return;
         }
         
         const allowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
         if (allowance.lt(betAmount)) {
-          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betAmount);
+          // MetaMask için approval gas limit
+          const approveGasLimit = usingMetaMask 
+            ? await getGasLimitWithBuffer(tokenContract, 'approve', [CONTRACT_ADDRESS, betAmount], true)
+            : undefined;
+          
+          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betAmount,
+            approveGasLimit ? { gasLimit: approveGasLimit } : {}
+          );
           await approveTx.wait();
+          
+          // MetaMask için ekstra bekleme
+          if (usingMetaMask) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
           
           const newAllowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
           setTokenAllowance(ethers.utils.formatEther(newAllowance));
         }
         
-        const tx = await contract.joinGame(gameId, choice);
+        // Join game
+        let tx;
+        if (usingMetaMask) {
+          const gasLimit = await getGasLimitWithBuffer(
+            contract, 
+            'joinGame', 
+            [gameId, choice], 
+            true
+          );
+          
+          tx = await contract.joinGame(gameId, choice, { gasLimit });
+        } else {
+          tx = await contract.joinGame(gameId, choice);
+        }
         await tx.wait();
       }
       
@@ -767,7 +890,22 @@ const RockPaperScissors = ({ onClose }) => {
       setLoading(true);
       setError('');
       
-      const tx = await contract.cancel(gameId);
+      const usingMetaMask = isMetaMask();
+      
+      let tx;
+      if (usingMetaMask) {
+        const gasLimit = await getGasLimitWithBuffer(
+          contract, 
+          'cancel', 
+          [gameId], 
+          true
+        );
+        
+        tx = await contract.cancel(gameId, { gasLimit });
+      } else {
+        tx = await contract.cancel(gameId);
+      }
+      
       await tx.wait();
       
       await loadGameData(contract, tokenContract, account, false);
@@ -1692,6 +1830,15 @@ const RockPaperScissors = ({ onClose }) => {
             ) : (
               <div className="account-info">
                 <span>Account: {formatAddress(account)}</span>
+                {isMetaMask() && (
+                  <span style={{ 
+                    fontSize: '0.8em', 
+                    color: '#F7931E',
+                    marginLeft: '-15px'
+                  }}>
+                  
+                  </span>
+                )}
                 {!networkCorrect && (
                   <span className="network-warning-badge">Wrong Network</span>
                 )}
