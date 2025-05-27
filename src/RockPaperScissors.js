@@ -914,6 +914,49 @@ const RockPaperScissors = ({ onClose }) => {
         
         if (tx) {
           await tx.wait();
+          await tx.wait();
+
+          // Oyun join edildikten sonra GameResolved event'ini dinle
+          const checkGameResolution = setInterval(async () => {
+            try {
+              const [updatedGame] = await contract.getGame(gameId);
+              
+              if (updatedGame.state === 2) { // Oyun bitti
+                clearInterval(checkGameResolution);
+                
+                const userAddr = account.toLowerCase();
+                const isPlayer1 = updatedGame.p1.toLowerCase() === userAddr;
+                const isPlayer2 = updatedGame.p2.toLowerCase() === userAddr;
+                
+                if (isPlayer1 || isPlayer2) {
+                  const isTie = updatedGame.winner === ethers.constants.AddressZero;
+                  const isWinner = !isTie && updatedGame.winner.toLowerCase() === userAddr;
+                  
+                  // Popup'ı göster
+                  setGameResultPopup({
+                    gameId: gameId.toString(),
+                    result: isTie ? 'tie' : (isWinner ? 'won' : 'lost'),
+                    refundAmount: isTie ? updatedGame.bet : undefined,
+                    winner: !isTie ? updatedGame.winner : undefined,
+                    winnings: !isTie ? updatedGame.bet.mul(2).mul(95).div(100) : undefined,
+                    isWinner: isWinner,
+                    playerChoice: isPlayer1 ? updatedGame.p1Choice : updatedGame.p2Choice,
+                    opponentChoice: isPlayer1 ? updatedGame.p2Choice : updatedGame.p1Choice,
+                    betAmount: updatedGame.bet,
+                    isAVAXGame: updatedGame.paymentType === 1
+                  });
+                  
+                  console.log('Game resolved, showing popup for joined game');
+                }
+              }
+            } catch (error) {
+              console.error('Error checking game resolution:', error);
+            }
+          }, 2000); // Her 2 saniyede kontrol et
+          
+          // 30 saniye sonra kontrolü durdur
+          setTimeout(() => clearInterval(checkGameResolution), 30000);
+
         }
       } else {
         // Join with ERC20 tokens
