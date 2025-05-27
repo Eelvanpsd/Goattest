@@ -947,7 +947,7 @@ const RockPaperScissors = ({ onClose }) => {
   const renderGameResultPopup = () => {
     if (!gameResultPopup) return null;
     
-    const { gameId, winner, winnings, isWinner, result, refundAmount, playerChoice, opponentChoice, betAmount } = gameResultPopup;
+    const { gameId, result } = gameResultPopup;
     
     return (
       <div className="game-result-popup-overlay">
@@ -985,24 +985,6 @@ const RockPaperScissors = ({ onClose }) => {
           <div className="result-details">
             <div className="game-info">
               <p><strong>Game #:</strong> {gameId}</p>
-              
-              {result === 'tie' && refundAmount && (
-                <p className="refund-highlight">
-                  <strong>Refunded:</strong> {formatTokenAmount(refundAmount)} GOAT
-                </p>
-              )}
-              
-              {result === 'won' && winnings && (
-                <p className="profit-highlight">
-                  <strong>You Won:</strong> {formatTokenAmount(winnings)} GOAT
-                </p>
-              )}
-              
-              {result === 'lost' && betAmount && (
-                <p className="loss-highlight">
-                  <strong>You Lost:</strong> {formatTokenAmount(betAmount)} GOAT
-                </p>
-              )}
             </div>
           </div>
           
@@ -1808,37 +1790,50 @@ const RockPaperScissors = ({ onClose }) => {
                 {isConnecting ? 'Connecting...' : 'Connect Wallet'}
               </button>
             ) : (
-              <div className="account-info">
-                <span>Account: {formatAddress(account)}</span>
-                {isMetaMask() && (
-                  <span style={{ 
-                    fontSize: '0.8em', 
-                    color: '#F7931E',
-                    marginLeft: '-15px'
-                  }}>
-                  
-                  </span>
-                )}
-                {!networkCorrect && (
-                  <span className="network-warning-badge">Wrong Network</span>
-                )}
-                <button 
-                  className="disconnect-wallet-btn"
-                  onClick={() => {
-                    setAccount(null);
-                    setSigner(null);
-                    setProvider(null);
-                    setContract(null);
-                    setTokenContract(null);
-                    setPlayerStats(null);
-                    setCurrentView('games');
-                    setNetworkCorrect(false);
-                    loadPublicData(true);
-                  }}
-                >
-                  Disconnect
-                </button>
-              </div>
+              <>
+                <div className="balance-display">
+                  <div className="balance-item">
+                    <span className="balance-label">GOAT</span>
+                    <span className="balance-value">{parseFloat(tokenBalance).toFixed(0)}</span>
+                  </div>
+                  <div className="balance-divider"></div>
+                  <div className="balance-item">
+                    <span className="balance-label">AVAX</span>
+                    <span className="balance-value">{parseFloat(avaxBalance).toFixed(4)}</span>
+                  </div>
+                </div>
+                <div className="account-info">
+                  <span>Account: {formatAddress(account)}</span>
+                  {isMetaMask() && (
+                    <span style={{ 
+                      fontSize: '0.8em', 
+                      color: '#F7931E',
+                      marginLeft: '-15px'
+                    }}>
+                    
+                    </span>
+                  )}
+                  {!networkCorrect && (
+                    <span className="network-warning-badge">Wrong Network</span>
+                  )}
+                  <button 
+                    className="disconnect-wallet-btn"
+                    onClick={() => {
+                      setAccount(null);
+                      setSigner(null);
+                      setProvider(null);
+                      setContract(null);
+                      setTokenContract(null);
+                      setPlayerStats(null);
+                      setCurrentView('games');
+                      setNetworkCorrect(false);
+                      loadPublicData(true);
+                    }}
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              </>
             )}
             <button 
               className="close-btn" 
