@@ -174,14 +174,14 @@ const RockPaperScissors = ({ onClose }) => {
     return window.ethereum && window.ethereum.isMetaMask;
   };
 
-  // Gas estimation helper function
+  // Gas estimation helper function - Updated with 50% buffer for MetaMask
   const getGasLimitWithBuffer = async (contract, methodName, params, isMetaMask = false) => {
     try {
-      // Gas tahmini al
+      // Get gas estimate
       const estimatedGas = await contract.estimateGas[methodName](...params);
       
-      // MetaMask için %30 buffer ekle, diğerleri için %10
-      const buffer = isMetaMask ? 130 : 110;
+      // 50% buffer for MetaMask, 10% for others
+      const buffer = isMetaMask ? 150 : 110;
       const gasWithBuffer = estimatedGas.mul(buffer).div(100);
       
       console.log(`Gas estimation for ${methodName}:`, {
@@ -195,7 +195,37 @@ const RockPaperScissors = ({ onClose }) => {
     } catch (error) {
       console.error('Gas estimation failed:', error);
       // Fallback gas limit
-      return isMetaMask ? ethers.BigNumber.from("600000") : ethers.BigNumber.from("500000");
+      return isMetaMask ? ethers.BigNumber.from("800000") : ethers.BigNumber.from("500000");
+    }
+  };
+
+  // MetaMask direct transaction helper
+  const sendMetaMaskTransaction = async (to, data, value = '0x0') => {
+    try {
+      const params = [{
+        from: account,
+        to: to,
+        data: data,
+        value: value,
+        gas: '0xC3500' // 800,000 in hex
+      }];
+
+      const txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: params,
+      });
+
+      // Wait for transaction receipt
+      let receipt = null;
+      while (!receipt) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        receipt = await provider.getTransactionReceipt(txHash);
+      }
+
+      return receipt;
+    } catch (error) {
+      console.error('MetaMask direct transaction failed:', error);
+      throw error;
     }
   };
 
@@ -359,7 +389,7 @@ const RockPaperScissors = ({ onClose }) => {
       if (chainId === AVALANCHE_NETWORK.chainId) {
         setNetworkCorrect(true);
         
-        // MetaMask için provider'ı yenile
+        // Refresh provider for MetaMask
         if (isMetaMask()) {
           const newProvider = new ethers.providers.Web3Provider(window.ethereum);
           setProvider(newProvider);
@@ -675,7 +705,7 @@ const RockPaperScissors = ({ onClose }) => {
       // Check and approve tokens if needed
       const currentAllowance = ethers.BigNumber.from(ethers.utils.parseEther(tokenAllowance));
       if (currentAllowance.lt(betWei)) {
-        // MetaMask için approval gas limit
+        // Approve with 50% gas buffer for MetaMask
         const approveGasLimit = usingMetaMask 
           ? await getGasLimitWithBuffer(tokenContract, 'approve', [CONTRACT_ADDRESS, betWei], true)
           : undefined;
@@ -685,16 +715,16 @@ const RockPaperScissors = ({ onClose }) => {
         );
         await approveTx.wait();
         
-        // MetaMask için ekstra bekleme
+        // Wait 3 seconds for MetaMask
         if (usingMetaMask) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
         }
         
         const newAllowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
         setTokenAllowance(ethers.utils.formatEther(newAllowance));
       }
       
-      // Create game with ERC20 tokens - MetaMask için gas limit ekle
+      // Create game with ERC20 tokens - 50% gas buffer for MetaMask
       let tx;
       if (usingMetaMask) {
         const gasLimit = await getGasLimitWithBuffer(
@@ -706,7 +736,7 @@ const RockPaperScissors = ({ onClose }) => {
         
         tx = await contract.createGameERC20(betWei, selectedChoice, { gasLimit });
       } else {
-        // Diğer walletlar için normal işlem
+        // Other wallets normal transaction
         tx = await contract.createGameERC20(betWei, selectedChoice);
       }
       
@@ -755,7 +785,7 @@ const RockPaperScissors = ({ onClose }) => {
       const betWei = ethers.utils.parseEther(betAmount);
       const usingMetaMask = isMetaMask();
       
-      // Create game with AVAX - MetaMask için gas limit ekle
+      // Create game with AVAX - 50% gas buffer for MetaMask
       let tx;
       if (usingMetaMask) {
         const gasLimit = await getGasLimitWithBuffer(
@@ -770,7 +800,7 @@ const RockPaperScissors = ({ onClose }) => {
           gasLimit: gasLimit 
         });
       } else {
-        // Diğer walletlar için normal işlem
+        // Other wallets normal transaction
         tx = await contract.createGameAVAX(selectedChoice, { value: betWei });
       }
       
@@ -799,7 +829,7 @@ const RockPaperScissors = ({ onClose }) => {
     }
   };
 
-  // Join existing game
+  // Join existing game - Updated with MetaMask fixes
   const joinGame = async (gameId, choice, game) => {
     if (!contract || !tokenContract) return;
     
@@ -815,21 +845,45 @@ const RockPaperScissors = ({ onClose }) => {
         // Join with AVAX
         let tx;
         if (usingMetaMask) {
-          const gasLimit = await getGasLimitWithBuffer(
-            contract, 
-            'joinGame', 
-            [gameId, choice], 
-            true
-          );
-          
-          tx = await contract.joinGame(gameId, choice, { 
-            value: betAmount,
-            gasLimit: gasLimit 
-          });
+          // Try direct MetaMask transaction for problematic cases
+          try {
+            const gasLimit = await getGasLimitWithBuffer(
+              contract, 
+              'joinGame', 
+              [gameId, choice], 
+              true
+            );
+            
+            tx = await contract.joinGame(gameId, choice, { 
+              value: betAmount,
+              gasLimit: gasLimit 
+            });
+          } catch (error) {
+            console.log('Trying direct MetaMask transaction...');
+            // If regular method fails, use direct MetaMask API
+            const iface = new ethers.utils.Interface(CONTRACT_ABI);
+            const data = iface.encodeFunctionData('joinGame', [gameId, choice]);
+            
+            const receipt = await sendMetaMaskTransaction(
+              CONTRACT_ADDRESS,
+              data,
+              ethers.utils.hexValue(betAmount)
+            );
+            
+            if (receipt.status === 1) {
+              await loadGameData(contract, tokenContract, account, false);
+              return;
+            } else {
+              throw new Error('Transaction failed');
+            }
+          }
         } else {
           tx = await contract.joinGame(gameId, choice, { value: betAmount });
         }
-        await tx.wait();
+        
+        if (tx) {
+          await tx.wait();
+        }
       } else {
         // Join with ERC20 tokens
         const balance = await tokenContract.balanceOf(account);
@@ -840,7 +894,7 @@ const RockPaperScissors = ({ onClose }) => {
         
         const allowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
         if (allowance.lt(betAmount)) {
-          // MetaMask için approval gas limit
+          // Approve with 50% gas buffer for MetaMask
           const approveGasLimit = usingMetaMask 
             ? await getGasLimitWithBuffer(tokenContract, 'approve', [CONTRACT_ADDRESS, betAmount], true)
             : undefined;
@@ -850,9 +904,9 @@ const RockPaperScissors = ({ onClose }) => {
           );
           await approveTx.wait();
           
-          // MetaMask için ekstra bekleme
+          // Wait 3 seconds for MetaMask
           if (usingMetaMask) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 3000));
           }
           
           const newAllowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
@@ -862,18 +916,37 @@ const RockPaperScissors = ({ onClose }) => {
         // Join game
         let tx;
         if (usingMetaMask) {
-          const gasLimit = await getGasLimitWithBuffer(
-            contract, 
-            'joinGame', 
-            [gameId, choice], 
-            true
-          );
-          
-          tx = await contract.joinGame(gameId, choice, { gasLimit });
+          try {
+            const gasLimit = await getGasLimitWithBuffer(
+              contract, 
+              'joinGame', 
+              [gameId, choice], 
+              true
+            );
+            
+            tx = await contract.joinGame(gameId, choice, { gasLimit });
+          } catch (error) {
+            console.log('Trying direct MetaMask transaction for ERC20...');
+            // If regular method fails, use direct MetaMask API
+            const iface = new ethers.utils.Interface(CONTRACT_ABI);
+            const data = iface.encodeFunctionData('joinGame', [gameId, choice]);
+            
+            const receipt = await sendMetaMaskTransaction(CONTRACT_ADDRESS, data);
+            
+            if (receipt.status === 1) {
+              await loadGameData(contract, tokenContract, account, false);
+              return;
+            } else {
+              throw new Error('Transaction failed');
+            }
+          }
         } else {
           tx = await contract.joinGame(gameId, choice);
         }
-        await tx.wait();
+        
+        if (tx) {
+          await tx.wait();
+        }
       }
       
       await loadGameData(contract, tokenContract, account, false);
