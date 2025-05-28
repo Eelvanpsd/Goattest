@@ -212,28 +212,31 @@ const RockPaperScissors = ({ onClose }) => {
     return window.ethereum && window.ethereum.isMetaMask;
   };
 
-  // Gas estimation helper function - Updated with 50% buffer for MetaMask
+  // Gas estimation helper function - Updated with 50% buffer for MetaMask ONLY on joinGame
   const getGasLimitWithBuffer = async (contract, methodName, params, isMetaMask = false) => {
     try {
       // Get gas estimate
       const estimatedGas = await contract.estimateGas[methodName](...params);
       
-      // 50% buffer for MetaMask, 10% for others
-      const buffer = isMetaMask ? 150 : 110;
+      // 50% buffer for MetaMask ONLY on joinGame, 10% for all others
+      const buffer = (isMetaMask && methodName === 'joinGame') ? 150 : 110;
       const gasWithBuffer = estimatedGas.mul(buffer).div(100);
       
       console.log(`Gas estimation for ${methodName}:`, {
         estimated: estimatedGas.toString(),
         withBuffer: gasWithBuffer.toString(),
         buffer: `${buffer - 100}%`,
-        wallet: isMetaMask ? 'MetaMask' : 'Other'
+        wallet: isMetaMask ? 'MetaMask' : 'Other',
+        method: methodName
       });
       
       return gasWithBuffer;
     } catch (error) {
       console.error('Gas estimation failed:', error);
-      // Fallback gas limit
-      return isMetaMask ? ethers.BigNumber.from("800000") : ethers.BigNumber.from("500000");
+      // Fallback gas limit - higher for joinGame on MetaMask
+      return (isMetaMask && methodName === 'joinGame') 
+        ? ethers.BigNumber.from("800000") 
+        : ethers.BigNumber.from("500000");
     }
   };
 
@@ -897,13 +900,11 @@ const RockPaperScissors = ({ onClose }) => {
       // Check and approve tokens if needed
       const currentAllowance = ethers.BigNumber.from(ethers.utils.parseEther(tokenAllowance));
       if (currentAllowance.lt(betWei)) {
-        // Approve with 50% gas buffer for MetaMask
-        const approveGasLimit = usingMetaMask 
-          ? await getGasLimitWithBuffer(tokenContract, 'approve', [CONTRACT_ADDRESS, betWei], true)
-          : undefined;
+        // Approve with standard 10% gas buffer (no special treatment for MetaMask)
+        const approveGasLimit = await getGasLimitWithBuffer(tokenContract, 'approve', [CONTRACT_ADDRESS, betWei], false);
         
         const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betWei, 
-          approveGasLimit ? { gasLimit: approveGasLimit } : {}
+          { gasLimit: approveGasLimit }
         );
         await approveTx.wait();
         
@@ -916,21 +917,15 @@ const RockPaperScissors = ({ onClose }) => {
         setTokenAllowance(ethers.utils.formatEther(newAllowance));
       }
       
-      // Create game with ERC20 tokens - 50% gas buffer for MetaMask
-      let tx;
-      if (usingMetaMask) {
-        const gasLimit = await getGasLimitWithBuffer(
-          contract, 
-          'createGameERC20', 
-          [betWei, selectedChoice], 
-          true
-        );
-        
-        tx = await contract.createGameERC20(betWei, selectedChoice, { gasLimit });
-      } else {
-        // Other wallets normal transaction
-        tx = await contract.createGameERC20(betWei, selectedChoice);
-      }
+      // Create game with ERC20 tokens - standard 10% gas buffer
+      const gasLimit = await getGasLimitWithBuffer(
+        contract, 
+        'createGameERC20', 
+        [betWei, selectedChoice], 
+        false // Always use standard buffer for createGame
+      );
+      
+      const tx = await contract.createGameERC20(betWei, selectedChoice, { gasLimit });
       
       const receipt = await tx.wait();
       
@@ -998,24 +993,18 @@ const RockPaperScissors = ({ onClose }) => {
       const betWei = ethers.utils.parseEther(betAmount);
       const usingMetaMask = isMetaMask();
       
-      // Create game with AVAX - 50% gas buffer for MetaMask
-      let tx;
-      if (usingMetaMask) {
-        const gasLimit = await getGasLimitWithBuffer(
-          contract, 
-          'createGameAVAX', 
-          [selectedChoice], 
-          true
-        );
-        
-        tx = await contract.createGameAVAX(selectedChoice, { 
-          value: betWei,
-          gasLimit: gasLimit 
-        });
-      } else {
-        // Other wallets normal transaction
-        tx = await contract.createGameAVAX(selectedChoice, { value: betWei });
-      }
+      // Create game with AVAX - standard 10% gas buffer
+      const gasLimit = await getGasLimitWithBuffer(
+        contract, 
+        'createGameAVAX', 
+        [selectedChoice], 
+        false // Always use standard buffer for createGame
+      );
+      
+      const tx = await contract.createGameAVAX(selectedChoice, { 
+        value: betWei,
+        gasLimit: gasLimit 
+      });
       
       const receipt = await tx.wait();
       
@@ -1124,13 +1113,11 @@ const RockPaperScissors = ({ onClose }) => {
         
         const allowance = await tokenContract.allowance(account, CONTRACT_ADDRESS);
         if (allowance.lt(betAmount)) {
-          // Approve with 50% gas buffer for MetaMask
-          const approveGasLimit = usingMetaMask 
-            ? await getGasLimitWithBuffer(tokenContract, 'approve', [CONTRACT_ADDRESS, betAmount], true)
-            : undefined;
+          // Approve with standard 10% gas buffer (no special treatment for MetaMask)
+          const approveGasLimit = await getGasLimitWithBuffer(tokenContract, 'approve', [CONTRACT_ADDRESS, betAmount], false);
           
           const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, betAmount,
-            approveGasLimit ? { gasLimit: approveGasLimit } : {}
+            { gasLimit: approveGasLimit }
           );
           await approveTx.wait();
           
